@@ -86,7 +86,20 @@ Deno.serve(async (req: Request) => {
     const generatedSyllabus = await generateSyllabusWithAI(courseConfig)
 
     // Validate the generated syllabus
-    const validatedSyllabus = GeneratedSyllabusSchema.parse(generatedSyllabus)
+    let validatedSyllabus
+    try {
+      validatedSyllabus = GeneratedSyllabusSchema.parse(generatedSyllabus)
+    } catch (validationError) {
+      console.error('Schema validation failed:', validationError)
+      
+      // Update syllabus status to 'failed' with validation error
+      await supabase
+        .from('syllabus')
+        .update({ status: 'failed' })
+        .eq('course_configuration_id', courseConfig.id)
+
+      throw new Error(`Schema validation failed: ${validationError instanceof Error ? validationError.message : 'Unknown validation error'}`)
+    }
 
     // Update the syllabus in the database
     const { error: updateError } = await supabase
@@ -164,18 +177,25 @@ IMPORTANT: You must respond with a valid JSON object that matches this exact str
 {
   "modules": [
     {
-      "summary": "Module title and brief description",
+      "summary": "Module title and comprehensive description (MINIMUM 20 characters, MAXIMUM 300 characters)",
       "topics": [
         {
-          "summary": "Topic title and brief description", 
+          "summary": "Topic title and brief description (minimum 10 characters, maximum 200 characters)", 
           "keywords": ["keyword1", "keyword2", "keyword3"],
-          "content": "Detailed markdown content explaining the topic, including learning objectives, key concepts, and practical applications"
+          "content": "Detailed markdown content explaining the topic, including learning objectives, key concepts, and practical applications (minimum 100 characters, maximum 2000 characters)"
         }
       ]
     }
   ],
   "keywords": ["course-level", "keywords", "for", "searchability"]
 }
+
+CRITICAL LENGTH REQUIREMENTS:
+- Module summary: MUST be at least 20 characters and at most 300 characters
+- Topic summary: MUST be at least 10 characters and at most 200 characters  
+- Topic content: MUST be at least 100 characters and at most 2000 characters
+- Keywords array: MUST have 5-20 course-level keywords
+- Topic keywords: MUST have 3-10 keywords per topic
 
 Course Structure Requirements:
 - ${courseStructure.modules} modules total
@@ -205,6 +225,11 @@ Context: ${courseConfig.context}
 Depth Level: ${courseConfig.depth}/5
 
 Generate a structured syllabus with ${courseStructure.modules} modules and ${courseStructure.topicsPerModule} topics per module. 
+
+REMEMBER: Ensure all content meets the minimum length requirements:
+- Module summaries must be at least 20 characters
+- Topic summaries must be at least 10 characters
+- Topic content must be at least 100 characters
 
 Adjust the content complexity, terminology, and source sophistication to match depth level ${courseConfig.depth}. Use advanced sources but present the information at the appropriate level for the learner.`
 
