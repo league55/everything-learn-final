@@ -166,8 +166,7 @@ export const dbOperations = {
       .from('user_enrollments')
       .select(`
         *,
-        course_configuration!inner(*),
-        course_configuration!inner(syllabus(*))
+        course_configuration!inner(*, syllabus(*))
       `)
       .eq('status', 'active')
       .order('enrolled_at', { ascending: false })
