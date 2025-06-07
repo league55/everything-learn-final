@@ -6,3 +6,4 @@
  
  // CORS headers
  const corsHeaders = {
+ }
