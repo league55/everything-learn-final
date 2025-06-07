@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/providers/theme-provider'
-import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/providers/auth-provider'
 import { cn } from '@/lib/utils'
 import {
   Home,
@@ -15,7 +15,6 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 interface SidebarProps {
   className?: string
@@ -41,50 +40,31 @@ const navigationItems = [
 
 export function Sidebar({ className }: SidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
-  const [user, setUser] = useState<SupabaseUser | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(false)
   const { theme, setTheme } = useTheme()
+  const { user, loading, signOut } = useAuth()
   const location = useLocation()
-
-  // Listen for auth state changes
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null)
-        setIsAuthLoading(false)
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [])
+  const navigate = useNavigate()
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light')
   }
 
-  const handleAuth = async () => {
-    setIsAuthLoading(true)
-    
-    try {
-      if (user) {
-        // Sign out
-        await supabase.auth.signOut()
-      } else {
-        // Sign in anonymously
-        const { error } = await supabase.auth.signInAnonymously()
-        if (error) {
-          console.error('Error signing in:', error.message)
-        }
+  const handleAuthAction = async () => {
+    if (user) {
+      // Sign out
+      setIsAuthLoading(true)
+      try {
+        await signOut()
+        navigate('/')
+      } catch (error) {
+        console.error('Error signing out:', error)
+      } finally {
+        setIsAuthLoading(false)
       }
-    } catch (error) {
-      console.error('Auth error:', error)
-      setIsAuthLoading(false)
+    } else {
+      // Navigate to login
+      navigate('/login')
     }
   }
 
@@ -103,7 +83,7 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center justify-center border-b border-border px-4">
-          <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
               <span className="text-primary-foreground font-bold text-sm">O</span>
             </div>
@@ -117,7 +97,7 @@ export function Sidebar({ className }: SidebarProps) {
                 Orion Path
               </span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Auth Status Indicator */}
@@ -126,10 +106,15 @@ export function Sidebar({ className }: SidebarProps) {
             <div className="flex items-center space-x-2 text-xs">
               <div className={cn(
                 "w-2 h-2 rounded-full flex-shrink-0",
-                isLoggedIn ? "bg-green-500" : "bg-red-500"
+                loading ? "bg-yellow-500" : isLoggedIn ? "bg-green-500" : "bg-red-500"
               )} />
               <span className="text-muted-foreground truncate">
-                {isLoggedIn ? 'Authenticated' : 'Not signed in'}
+                {loading 
+                  ? 'Loading...' 
+                  : isLoggedIn 
+                    ? user.email || 'Authenticated' 
+                    : 'Not signed in'
+                }
               </span>
             </div>
           </div>
@@ -139,6 +124,8 @@ export function Sidebar({ className }: SidebarProps) {
         <nav className="flex-1 space-y-2 p-4">
           {navigationItems.map((item) => {
             const isActive = location.pathname === item.href
+            const isProfileRoute = item.href === '/profile'
+            
             return (
               <Link
                 key={item.href}
@@ -146,8 +133,15 @@ export function Sidebar({ className }: SidebarProps) {
                 className={cn(
                   'flex items-center rounded-lg text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground group relative',
                   isExpanded ? 'space-x-3 px-3 py-2' : 'justify-center py-2 px-2',
-                  isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                  isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+                  isProfileRoute && !isLoggedIn && 'opacity-50'
                 )}
+                onClick={(e) => {
+                  if (isProfileRoute && !isLoggedIn) {
+                    e.preventDefault()
+                    navigate('/login')
+                  }
+                }}
               >
                 <div className={cn(
                   'flex items-center justify-center flex-shrink-0',
@@ -208,8 +202,8 @@ export function Sidebar({ className }: SidebarProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleAuth}
-            disabled={isAuthLoading}
+            onClick={handleAuthAction}
+            disabled={loading || isAuthLoading}
             className={cn(
               'w-full transition-all',
               isExpanded ? 'justify-start space-x-3 px-3' : 'justify-center px-2'
@@ -219,7 +213,7 @@ export function Sidebar({ className }: SidebarProps) {
               'flex items-center justify-center flex-shrink-0',
               !isExpanded ? 'h-8 w-8' : 'h-5 w-5'
             )}>
-              {isAuthLoading ? (
+              {loading || isAuthLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : isLoggedIn ? (
                 <LogOut className="h-5 w-5" />
@@ -234,7 +228,12 @@ export function Sidebar({ className }: SidebarProps) {
               )}
             >
               <span className="whitespace-nowrap">
-                {isAuthLoading ? 'Loading...' : isLoggedIn ? 'Sign Out' : 'Sign In'}
+                {loading || isAuthLoading
+                  ? 'Loading...' 
+                  : isLoggedIn 
+                    ? 'Sign Out' 
+                    : 'Sign In'
+                }
               </span>
             </div>
           </Button>
