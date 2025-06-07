@@ -61,20 +61,35 @@ export function CourseLearnPage() {
       try {
         setLoading(true)
         
-        // Get course with enrollment info
+        // Try to get course data including enrollment info
+        let courseData: CourseWithDetails | null = null
+        
+        // First, check if user is enrolled and get data from enrolled courses
         const enrolledCourses = await dbOperations.getUserEnrolledCourses()
         const enrolledCourse = enrolledCourses.find(c => c.id === courseId)
         
-        if (!enrolledCourse) {
-          // If not enrolled, try to get course info from public courses
-          const publicCourses = await dbOperations.getAllCourses()
-          const publicCourse = publicCourses.find(c => c.id === courseId)
+        if (enrolledCourse) {
+          courseData = enrolledCourse
+        } else {
+          // If not enrolled, get course data directly
+          courseData = await dbOperations.getCourseById(courseId)
           
-          if (!publicCourse) {
+          if (!courseData) {
             throw new Error('Course not found')
           }
           
-          // Redirect to courses page with enrollment message
+          // Check if course has completed syllabus
+          if (!courseData.syllabus || courseData.syllabus.status !== 'completed') {
+            toast({
+              title: "Course Not Ready",
+              description: "This course is still being generated. Please try again later.",
+              variant: "destructive"
+            })
+            navigate('/courses')
+            return
+          }
+          
+          // If course exists but user is not enrolled, redirect to enroll
           toast({
             title: "Not Enrolled",
             description: "You need to enroll in this course first.",
@@ -84,11 +99,16 @@ export function CourseLearnPage() {
           return
         }
 
-        setCourse(enrolledCourse)
+        setCourse(courseData)
+        
+        // Debug: Log the course data structure
+        console.log('Course Data:', courseData)
+        console.log('Syllabus:', courseData.syllabus)
+        console.log('Modules:', courseData.syllabus?.modules)
         
         // Set initial progress from enrollment
-        if (enrolledCourse.user_enrollment) {
-          const moduleIndex = enrolledCourse.user_enrollment.current_module_index || 0
+        if (courseData.user_enrollment) {
+          const moduleIndex = courseData.user_enrollment.current_module_index || 0
           setProgress(prev => ({
             ...prev,
             moduleIndex,
@@ -184,6 +204,25 @@ export function CourseLearnPage() {
         <div className="max-w-4xl mx-auto">
           <Alert variant="destructive">
             <AlertDescription>{error || 'Course not found'}</AlertDescription>
+          </Alert>
+          <Button onClick={() => navigate('/courses')} className="mt-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Courses
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Check if course has valid syllabus with modules
+  if (!course.syllabus || !course.syllabus.modules || course.syllabus.modules.length === 0) {
+    return (
+      <div className="min-h-screen p-6">
+        <div className="max-w-4xl mx-auto">
+          <Alert>
+            <AlertDescription>
+              This course doesn't have any content yet. The syllabus might still be generating.
+            </AlertDescription>
           </Alert>
           <Button onClick={() => navigate('/courses')} className="mt-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
