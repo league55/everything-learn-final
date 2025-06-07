@@ -1,0 +1,276 @@
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Progress } from '@/components/ui/progress'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
+import type { CourseConfiguration, SyllabusModule, SyllabusTopic, UserEnrollment } from '@/lib/supabase'
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  CheckCircle,
+  BookOpen,
+  Clock,
+  Target,
+  User
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import 'highlight.js/styles/github-dark.css'
+
+interface CourseContentProps {
+  course: CourseConfiguration
+  module: SyllabusModule
+  topic: SyllabusTopic
+  moduleIndex: number
+  topicIndex: number
+  totalModules: number
+  enrollment: UserEnrollment
+  onMarkComplete: () => void
+  onNavigate: (moduleIndex: number, topicIndex: number) => void
+}
+
+export function CourseContent({
+  course,
+  module,
+  topic,
+  moduleIndex,
+  topicIndex,
+  totalModules,
+  enrollment,
+  onMarkComplete,
+  onNavigate
+}: CourseContentProps) {
+  const canGoBack = moduleIndex > 0 || topicIndex > 0
+  const canGoForward = moduleIndex < totalModules - 1 || topicIndex < module.topics.length - 1
+  const isLastTopic = moduleIndex === totalModules - 1 && topicIndex === module.topics.length - 1
+
+  const handlePrevious = () => {
+    if (topicIndex > 0) {
+      onNavigate(moduleIndex, topicIndex - 1)
+    } else if (moduleIndex > 0) {
+      // Go to last topic of previous module
+      const prevModule = moduleIndex - 1
+      onNavigate(prevModule, module.topics.length - 1)
+    }
+  }
+
+  const handleNext = () => {
+    if (topicIndex < module.topics.length - 1) {
+      onNavigate(moduleIndex, topicIndex + 1)
+    } else if (moduleIndex < totalModules - 1) {
+      // Go to first topic of next module
+      onNavigate(moduleIndex + 1, 0)
+    }
+  }
+
+  const getDepthLabel = (depth: number) => {
+    const labels = {
+      1: 'Beginner',
+      2: 'Casual', 
+      3: 'Hobby',
+      4: 'Academic',
+      5: 'Professional'
+    }
+    return labels[depth as keyof typeof labels] || 'Unknown'
+  }
+
+  const courseProgress = Math.round((enrollment.current_module_index / totalModules) * 100)
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Content Header */}
+      <div className="border-b border-border p-6 bg-card">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+          <span>{course.topic}</span>
+          <span>→</span>
+          <span>Module {moduleIndex + 1}</span>
+          <span>→</span>
+          <span className="text-foreground font-medium">{topic.summary}</span>
+        </div>
+
+        {/* Topic Header */}
+        <div className="space-y-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Badge variant="outline" className="text-xs">
+                Module {moduleIndex + 1} • Topic {topicIndex + 1}
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                {getDepthLabel(course.depth)}
+              </Badge>
+            </div>
+            <h1 className="text-3xl font-bold mb-2">{topic.summary}</h1>
+            <p className="text-lg text-muted-foreground line-clamp-2">
+              {module.summary}
+            </p>
+          </div>
+
+          {/* Keywords */}
+          {topic.keywords.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {topic.keywords.map((keyword, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  {keyword}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* Progress Info */}
+          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <BookOpen className="h-4 w-4" />
+              <span>{totalModules} modules</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Target className="h-4 w-4" />
+              <span>Progress: {courseProgress}%</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="h-4 w-4" />
+              <span>Enrolled {new Date(enrollment.enrolled_at).toLocaleDateString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex">
+        <ScrollArea className="flex-1">
+          <div className="max-w-4xl mx-auto p-6">
+            {/* Content */}
+            <div className="prose prose-neutral dark:prose-invert max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                components={{
+                  h1: ({ children }) => (
+                    <h1 className="text-3xl font-bold mb-6 mt-8 first:mt-0">{children}</h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-2xl font-semibold mb-4 mt-8 first:mt-0">{children}</h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-xl font-semibold mb-3 mt-6 first:mt-0">{children}</h3>
+                  ),
+                  p: ({ children }) => (
+                    <p className="text-base leading-7 mb-4">{children}</p>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>
+                  ),
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground">
+                      {children}
+                    </blockquote>
+                  ),
+                  code: ({ children, className }) => {
+                    const isInline = !className
+                    return isInline ? (
+                      <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
+                        {children}
+                      </code>
+                    ) : (
+                      <code className={className}>{children}</code>
+                    )
+                  },
+                  pre: ({ children }) => (
+                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4">
+                      {children}
+                    </pre>
+                  ),
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-4">
+                      <table className="min-w-full border border-border">
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  th: ({ children }) => (
+                    <th className="border border-border px-4 py-2 bg-muted text-left font-semibold">
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children }) => (
+                    <td className="border border-border px-4 py-2">{children}</td>
+                  ),
+                }}
+              >
+                {topic.content}
+              </ReactMarkdown>
+            </div>
+
+            {/* Learning Objectives Section */}
+            <div className="mt-12 p-6 bg-muted/50 rounded-lg">
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Learning Objectives
+              </h3>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Understand the key concepts covered in this topic</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Apply the knowledge in practical scenarios</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Connect this topic to the broader course context</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Navigation Footer */}
+      <div className="border-t border-border p-4 bg-card">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={!canGoBack}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Topic {topicIndex + 1} of {module.topics.length} • Module {moduleIndex + 1} of {totalModules}
+            </div>
+            
+            {isLastTopic ? (
+              <Button onClick={onMarkComplete} className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Complete Course
+              </Button>
+            ) : (
+              <Button onClick={onMarkComplete} variant="outline">
+                Mark Complete & Continue
+              </Button>
+            )}
+          </div>
+
+          <Button
+            onClick={handleNext}
+            disabled={!canGoForward}
+            className="flex items-center gap-2"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
