@@ -125,7 +125,8 @@ export const dbOperations = {
     })
 
     if (error) {
-      throw new Error(`Failed to generate syllabus: ${error.message}`)
+      const errorMessage = error.message || 'Network error occurred while calling the edge function. Please check your connection and try again.'
+      throw new Error(`Failed to generate syllabus: ${errorMessage}`)
     }
   }
 }
