@@ -245,7 +245,7 @@ export function ProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {courses.length > 0 && (
-                    <Badge variant="secondary" className="w-full justify-start">
+                    <Badge variant="secondary\" className="w-full justify-start">
                       <Target className="h-4 w-4 mr-2" />
                       First Course Created
                     </Badge>
