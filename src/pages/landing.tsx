@@ -68,14 +68,29 @@ export function LandingPage() {
         depth: formData.depth
       })
 
-      // Create initial syllabus record (will be populated by edge function)
+      // Create initial syllabus record
       await dbOperations.createSyllabus(courseConfig.id)
 
-      toast({
-        title: "Course Created Successfully!",
-        description: "Your course is being generated. We'll notify you when it's ready.",
-        duration: 5000,
-      })
+      // Generate syllabus via edge function
+      try {
+        await dbOperations.generateSyllabus(courseConfig)
+        
+        toast({
+          title: "Course Created Successfully!",
+          description: "Your course is being generated. We'll notify you when it's ready.",
+          duration: 5000,
+        })
+      } catch (generateError) {
+        // Course and syllabus were created, but generation failed
+        // This is not critical as the user can retry generation later
+        console.warn('Syllabus generation failed:', generateError)
+        
+        toast({
+          title: "Course Created",
+          description: "Course created successfully, but syllabus generation encountered an issue. The system will retry automatically.",
+          duration: 5000,
+        })
+      }
 
       // Reset form
       setFormData({

@@ -112,5 +112,20 @@ export const dbOperations = {
     }
 
     return data
+  },
+
+  // Call edge function to generate syllabus
+  async generateSyllabus(courseConfiguration: CourseConfiguration): Promise<void> {
+    const { error } = await supabase.functions.invoke('generate-syllabus', {
+      body: {
+        table: 'course_configuration',
+        type: 'INSERT',
+        record: courseConfiguration
+      }
+    })
+
+    if (error) {
+      throw new Error(`Failed to generate syllabus: ${error.message}`)
+    }
   }
 }
