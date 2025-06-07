@@ -101,10 +101,6 @@ export function CoursesPage() {
     }
   }
 
-  const handleContinueLearning = (courseId: string) => {
-    navigate(`/learn/${courseId}`)
-  }
-
   const getDepthLabel = (depth: number) => {
     const labels = {
       1: 'Beginner',
@@ -254,11 +250,7 @@ export function CoursesPage() {
                           </div>
                         )}
 
-                        <Button 
-                          className="w-full" 
-                          variant={isCompleted ? "outline" : "default"}
-                          onClick={() => handleContinueLearning(course.id)}
-                        >
+                        <Button className="w-full" variant={isCompleted ? "outline" : "default"}>
                           <Play className="h-4 w-4 mr-2" />
                           {isCompleted ? 'Review Course' : 'Continue Learning'}
                         </Button>
@@ -364,10 +356,10 @@ export function CoursesPage() {
                         <Button 
                           variant="outline" 
                           className="w-full"
-                          onClick={() => handleContinueLearning(course.id)}
+                          onClick={() => navigate('/profile')}
                         >
                           <TrendingUp className="h-4 w-4 mr-2" />
-                          Continue Learning
+                          View Progress
                         </Button>
                       ) : (
                         <Button 

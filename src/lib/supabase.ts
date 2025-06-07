@@ -166,7 +166,8 @@ export const dbOperations = {
       .from('user_enrollments')
       .select(`
         *,
-        course_configuration!inner(*, syllabus(*))
+        course_configuration!inner(*),
+        syllabus:course_configuration!inner(syllabus(*))
       `)
       .eq('status', 'active')
       .order('enrolled_at', { ascending: false })
@@ -177,57 +178,21 @@ export const dbOperations = {
 
     if (!data) return []
 
-    return data.map(enrollment => {
-      // Handle the nested syllabus structure properly
-      const syllabusData = enrollment.course_configuration?.syllabus?.[0]
-      
-      return {
-        ...enrollment.course_configuration,
-        syllabus: syllabusData,
-        user_enrollment: {
-          id: enrollment.id,
-          user_id: enrollment.user_id,
-          course_configuration_id: enrollment.course_configuration_id,
-          enrolled_at: enrollment.enrolled_at,
-          current_module_index: enrollment.current_module_index,
-          completed_at: enrollment.completed_at,
-          status: enrollment.status,
-          created_at: enrollment.created_at,
-          updated_at: enrollment.updated_at
-        }
+    return data.map(enrollment => ({
+      ...enrollment.course_configuration,
+      syllabus: enrollment.syllabus?.syllabus?.[0],
+      user_enrollment: {
+        id: enrollment.id,
+        user_id: enrollment.user_id,
+        course_configuration_id: enrollment.course_configuration_id,
+        enrolled_at: enrollment.enrolled_at,
+        current_module_index: enrollment.current_module_index,
+        completed_at: enrollment.completed_at,
+        status: enrollment.status,
+        created_at: enrollment.created_at,
+        updated_at: enrollment.updated_at
       }
-    })
-  },
-
-  // Get a specific course by ID with syllabus (for learning page)
-  async getCourseById(courseId: string): Promise<CourseWithDetails | null> {
-    const { data: course, error: courseError } = await supabase
-      .from('course_configuration')
-      .select(`
-        *,
-        syllabus(*)
-      `)
-      .eq('id', courseId)
-      .single()
-
-    if (courseError) {
-      if (courseError.code === 'PGRST116') return null // Not found
-      throw new Error(`Failed to fetch course: ${courseError.message}`)
-    }
-
-    // Get user's enrollment if exists
-    const { data: enrollment } = await supabase
-      .from('user_enrollments')
-      .select('*')
-      .eq('course_configuration_id', courseId)
-      .eq('status', 'active')
-      .single()
-
-    return {
-      ...course,
-      syllabus: course.syllabus?.[0],
-      user_enrollment: enrollment || undefined
-    }
+    }))
   },
 
   // Enroll user in a course
