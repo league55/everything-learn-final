@@ -1,5 +1,5 @@
-import { createClient } from 'supabase-js'
-import { z } from 'zod'
+import { createClient } from 'npm:@supabase/supabase-js'
+import { z } from 'npm:zod'
 
 // Zod schemas for validation
 const SyllabusTopicSchema = z.object({
