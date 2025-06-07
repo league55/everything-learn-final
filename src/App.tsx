@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/auth/protected-route'
 import { LandingPage } from '@/pages/landing'
 import { CoursesPage } from '@/pages/courses'
 import { ProfilePage } from '@/pages/profile'
+import { CourseLearnPage } from '@/pages/course-learn'
 import { LoginPage } from '@/pages/auth/login'
 import { SignUpPage } from '@/pages/auth/signup'
 import { ForgotPasswordPage } from '@/pages/auth/forgot-password'
@@ -36,6 +37,16 @@ function App() {
                 } 
               />
             </Route>
+
+            {/* Course learning route - full screen without sidebar */}
+            <Route 
+              path="/learn/:courseId" 
+              element={
+                <ProtectedRoute>
+                  <CourseLearnPage />
+                </ProtectedRoute>
+              } 
+            />
           </Routes>
           <Toaster />
         </Router>
