@@ -41,6 +41,24 @@ export interface Syllabus {
   updated_at: string
 }
 
+export interface UserEnrollment {
+  id: string
+  user_id: string
+  course_configuration_id: string
+  enrolled_at: string
+  current_module_index: number
+  completed_at: string | null
+  status: 'active' | 'completed' | 'dropped'
+  created_at: string
+  updated_at: string
+}
+
+export interface CourseWithDetails extends CourseConfiguration {
+  syllabus?: Syllabus
+  enrollment_count?: number
+  user_enrollment?: UserEnrollment
+}
+
 // Database operations
 export const dbOperations = {
   // Create a new course configuration
@@ -79,6 +97,149 @@ export const dbOperations = {
     }
 
     return data || []
+  },
+
+  // Get all public courses (for course discovery)
+  async getAllCourses(limit = 50, offset = 0): Promise<CourseWithDetails[]> {
+    const { data: courses, error: coursesError } = await supabase
+      .from('course_configuration')
+      .select(`
+        *,
+        syllabus!inner(*)
+      `)
+      .eq('syllabus.status', 'completed')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (coursesError) {
+      throw new Error(`Failed to fetch courses: ${coursesError.message}`)
+    }
+
+    if (!courses) return []
+
+    // Get enrollment counts for each course
+    const courseIds = courses.map(course => course.id)
+    const { data: enrollmentCounts, error: countError } = await supabase
+      .from('user_enrollments')
+      .select('course_configuration_id')
+      .in('course_configuration_id', courseIds)
+      .eq('status', 'active')
+
+    if (countError) {
+      console.warn('Failed to fetch enrollment counts:', countError)
+    }
+
+    // Get current user's enrollments for these courses
+    const { data: userEnrollments, error: enrollmentError } = await supabase
+      .from('user_enrollments')
+      .select('*')
+      .in('course_configuration_id', courseIds)
+      .eq('status', 'active')
+      .order('enrolled_at', { ascending: false })
+
+    if (enrollmentError) {
+      console.warn('Failed to fetch user enrollments:', enrollmentError)
+    }
+
+    // Combine data
+    return courses.map(course => {
+      const enrollmentCount = enrollmentCounts?.filter(
+        ec => ec.course_configuration_id === course.id
+      ).length || 0
+
+      const userEnrollment = userEnrollments?.find(
+        ue => ue.course_configuration_id === course.id
+      )
+
+      return {
+        ...course,
+        syllabus: course.syllabus?.[0],
+        enrollment_count: enrollmentCount,
+        user_enrollment: userEnrollment
+      }
+    })
+  },
+
+  // Get user's enrolled courses with progress
+  async getUserEnrolledCourses(): Promise<CourseWithDetails[]> {
+    const { data, error } = await supabase
+      .from('user_enrollments')
+      .select(`
+        *,
+        course_configuration!inner(*),
+        syllabus:course_configuration!inner(syllabus(*))
+      `)
+      .eq('status', 'active')
+      .order('enrolled_at', { ascending: false })
+
+    if (error) {
+      throw new Error(`Failed to fetch enrolled courses: ${error.message}`)
+    }
+
+    if (!data) return []
+
+    return data.map(enrollment => ({
+      ...enrollment.course_configuration,
+      syllabus: enrollment.syllabus?.syllabus?.[0],
+      user_enrollment: {
+        id: enrollment.id,
+        user_id: enrollment.user_id,
+        course_configuration_id: enrollment.course_configuration_id,
+        enrolled_at: enrollment.enrolled_at,
+        current_module_index: enrollment.current_module_index,
+        completed_at: enrollment.completed_at,
+        status: enrollment.status,
+        created_at: enrollment.created_at,
+        updated_at: enrollment.updated_at
+      }
+    }))
+  },
+
+  // Enroll user in a course
+  async enrollInCourse(courseConfigurationId: string): Promise<UserEnrollment> {
+    const { data, error } = await supabase
+      .from('user_enrollments')
+      .insert({
+        course_configuration_id: courseConfigurationId,
+        user_id: (await supabase.auth.getUser()).data.user?.id
+      })
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Failed to enroll in course: ${error.message}`)
+    }
+
+    return data
+  },
+
+  // Update user progress in a course
+  async updateCourseProgress(
+    enrollmentId: string, 
+    moduleIndex: number,
+    completed: boolean = false
+  ): Promise<UserEnrollment> {
+    const updateData: any = {
+      current_module_index: moduleIndex
+    }
+
+    if (completed) {
+      updateData.status = 'completed'
+      updateData.completed_at = new Date().toISOString()
+    }
+
+    const { data, error } = await supabase
+      .from('user_enrollments')
+      .update(updateData)
+      .eq('id', enrollmentId)
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Failed to update course progress: ${error.message}`)
+    }
+
+    return data
   },
 
   // Get syllabus for a course configuration
