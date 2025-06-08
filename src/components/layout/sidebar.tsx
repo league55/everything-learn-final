@@ -253,9 +253,14 @@ export function Sidebar({ className }: SidebarProps) {
             variant="default"
             size="lg"
             onClick={() => setIsOpen(true)}
-            className="rounded-full h-14 w-14 shadow-lg hover:shadow-xl transition-all duration-200"
+            className="rounded-full h-14 w-14 shadow-lg hover:shadow-xl transition-all duration-200 flex flex-col items-center justify-center gap-1"
           >
-            <Menu className="h-6 w-6" />
+            {/* Custom Hamburger Icon */}
+            <div className="flex flex-col items-center justify-center gap-1">
+              <div className="w-5 h-0.5 bg-primary-foreground rounded-full transition-all duration-200" />
+              <div className="w-5 h-0.5 bg-primary-foreground rounded-full transition-all duration-200" />
+              <div className="w-5 h-0.5 bg-primary-foreground rounded-full transition-all duration-200" />
+            </div>
           </Button>
         </div>
       </div>
