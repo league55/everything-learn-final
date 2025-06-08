@@ -19,7 +19,9 @@ import {
   Loader2,
   Sparkles,
   FileText,
-  Info
+  Info,
+  ExternalLink,
+  Quote
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import 'highlight.js/styles/github-dark.css'
@@ -88,6 +90,34 @@ export function CourseContent({
   }
 
   const courseProgress = Math.round((enrollment.current_module_index / totalModules) * 100)
+
+  // Parse full content if it's a JSON string
+  const parseFullContent = (content: string | null): { 
+    content: string, 
+    metadata?: any, 
+    citations?: any[] 
+  } | null => {
+    if (!content) return null
+    
+    try {
+      // Try to parse as JSON first
+      const parsed = JSON.parse(content)
+      if (parsed.content) {
+        return {
+          content: parsed.content,
+          metadata: parsed.metadata,
+          citations: parsed.citations
+        }
+      }
+      // If it's JSON but doesn't have content field, return as is
+      return { content: content }
+    } catch {
+      // If it's not JSON, treat as plain markdown
+      return { content: content }
+    }
+  }
+
+  const parsedFullContent = parseFullContent(fullContent)
 
   return (
     <div className="flex flex-col h-full">
@@ -218,7 +248,7 @@ export function CourseContent({
                   <h2 className="text-xl font-semibold">Comprehensive Content</h2>
                 </div>
                 
-                {!fullContent && !isGeneratingFullContent && (
+                {!parsedFullContent && !isGeneratingFullContent && (
                   <Button 
                     onClick={onGenerateFullContent}
                     className="flex items-center gap-2"
@@ -240,69 +270,150 @@ export function CourseContent({
                     This may take a few moments.
                   </p>
                 </div>
-              ) : fullContent ? (
-                <div className="prose prose-neutral dark:prose-invert max-w-none">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeHighlight]}
-                    components={{
-                      h1: ({ children }) => (
-                        <h1 className="text-3xl font-bold mb-6 mt-8 first:mt-0">{children}</h1>
-                      ),
-                      h2: ({ children }) => (
-                        <h2 className="text-2xl font-semibold mb-4 mt-8 first:mt-0">{children}</h2>
-                      ),
-                      h3: ({ children }) => (
-                        <h3 className="text-xl font-semibold mb-3 mt-6 first:mt-0">{children}</h3>
-                      ),
-                      p: ({ children }) => (
-                        <p className="text-base leading-7 mb-4">{children}</p>
-                      ),
-                      ul: ({ children }) => (
-                        <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>
-                      ),
-                      blockquote: ({ children }) => (
-                        <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground">
-                          {children}
-                        </blockquote>
-                      ),
-                      code: ({ children, className }) => {
-                        const isInline = !className
-                        return isInline ? (
-                          <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
+              ) : parsedFullContent ? (
+                <div className="space-y-6">
+                  {/* Main Content */}
+                  <div className="prose prose-neutral dark:prose-invert max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                      components={{
+                        h1: ({ children }) => (
+                          <h1 className="text-3xl font-bold mb-6 mt-8 first:mt-0">{children}</h1>
+                        ),
+                        h2: ({ children }) => (
+                          <h2 className="text-2xl font-semibold mb-4 mt-8 first:mt-0">{children}</h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-xl font-semibold mb-3 mt-6 first:mt-0">{children}</h3>
+                        ),
+                        p: ({ children }) => (
+                          <p className="text-base leading-7 mb-4">{children}</p>
+                        ),
+                        ul: ({ children }) => (
+                          <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>
+                        ),
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground">
                             {children}
-                          </code>
-                        ) : (
-                          <code className={className}>{children}</code>
-                        )
-                      },
-                      pre: ({ children }) => (
-                        <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4">
-                          {children}
-                        </pre>
-                      ),
-                      table: ({ children }) => (
-                        <div className="overflow-x-auto my-4">
-                          <table className="min-w-full border border-border">
+                          </blockquote>
+                        ),
+                        code: ({ children, className }) => {
+                          const isInline = !className
+                          return isInline ? (
+                            <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
+                              {children}
+                            </code>
+                          ) : (
+                            <code className={className}>{children}</code>
+                          )
+                        },
+                        pre: ({ children }) => (
+                          <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4">
                             {children}
-                          </table>
-                        </div>
-                      ),
-                      th: ({ children }) => (
-                        <th className="border border-border px-4 py-2 bg-muted text-left font-semibold">
-                          {children}
-                        </th>
-                      ),
-                      td: ({ children }) => (
-                        <td className="border border-border px-4 py-2">{children}</td>
-                      ),
-                    }}
-                  >
-                    {fullContent}
-                  </ReactMarkdown>
+                          </pre>
+                        ),
+                        table: ({ children }) => (
+                          <div className="overflow-x-auto my-4">
+                            <table className="min-w-full border border-border">
+                              {children}
+                            </table>
+                          </div>
+                        ),
+                        th: ({ children }) => (
+                          <th className="border border-border px-4 py-2 bg-muted text-left font-semibold">
+                            {children}
+                          </th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="border border-border px-4 py-2">{children}</td>
+                        ),
+                      }}
+                    >
+                      {parsedFullContent.content}
+                    </ReactMarkdown>
+                  </div>
+
+                  {/* Citations Section */}
+                  {parsedFullContent.citations && parsedFullContent.citations.length > 0 && (
+                    <div className="mt-8 p-6 bg-muted/30 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Quote className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">Sources & References</h3>
+                      </div>
+                      <div className="space-y-3">
+                        {parsedFullContent.citations.map((citation: any, index: number) => (
+                          <div key={citation.id || index} className="text-sm">
+                            <div className="font-medium">{citation.title}</div>
+                            {citation.authors && citation.authors.length > 0 && (
+                              <div className="text-muted-foreground">
+                                By: {citation.authors.join(', ')}
+                              </div>
+                            )}
+                            {citation.publisher && (
+                              <div className="text-muted-foreground">
+                                {citation.publisher}
+                                {citation.publication_date && ` (${citation.publication_date})`}
+                              </div>
+                            )}
+                            {citation.url && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <ExternalLink className="h-3 w-3" />
+                                <a 
+                                  href={citation.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline text-xs"
+                                >
+                                  View Source
+                                </a>
+                              </div>
+                            )}
+                            {citation.excerpt && (
+                              <div className="text-xs text-muted-foreground mt-1 italic">
+                                "{citation.excerpt}"
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Metadata Section */}
+                  {parsedFullContent.metadata && (
+                    <div className="mt-6 p-4 bg-muted/20 rounded-lg">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        {parsedFullContent.metadata.word_count && (
+                          <div>
+                            <div className="font-medium text-muted-foreground">Word Count</div>
+                            <div>{parsedFullContent.metadata.word_count}</div>
+                          </div>
+                        )}
+                        {parsedFullContent.metadata.estimated_reading_time && (
+                          <div>
+                            <div className="font-medium text-muted-foreground">Reading Time</div>
+                            <div>{parsedFullContent.metadata.estimated_reading_time} min</div>
+                          </div>
+                        )}
+                        {parsedFullContent.metadata.difficulty_level && (
+                          <div>
+                            <div className="font-medium text-muted-foreground">Difficulty</div>
+                            <div className="capitalize">{parsedFullContent.metadata.difficulty_level}</div>
+                          </div>
+                        )}
+                        {parsedFullContent.metadata.key_concepts && (
+                          <div>
+                            <div className="font-medium text-muted-foreground">Key Concepts</div>
+                            <div>{parsedFullContent.metadata.key_concepts.length}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-12 bg-muted/10 rounded-lg border-2 border-dashed border-muted-foreground/25">

@@ -103,10 +103,25 @@ export function LearnCoursePage() {
         )
         setTopicContent(content)
 
-        // Check for full content
+        // Check for full content - look for text content type
         const textContent = content.find(item => item.content_type === 'text')
-        if (textContent?.content_data?.content) {
-          setFullContent(textContent.content_data.content)
+        if (textContent?.content_data) {
+          // Parse the content_data to extract the actual content
+          let extractedContent = null
+          
+          if (typeof textContent.content_data === 'string') {
+            try {
+              const parsed = JSON.parse(textContent.content_data)
+              extractedContent = parsed.content || textContent.content_data
+            } catch {
+              extractedContent = textContent.content_data
+            }
+          } else if (textContent.content_data.content) {
+            // If it's already an object, get the content field
+            extractedContent = JSON.stringify(textContent.content_data)
+          }
+          
+          setFullContent(extractedContent)
         } else {
           setFullContent(null)
         }
@@ -164,13 +179,29 @@ export function LearnCoursePage() {
             setTopicContent(content)
 
             const textContent = content.find(item => item.content_type === 'text')
-            if (textContent?.content_data?.content) {
-              setFullContent(textContent.content_data.content)
-              toast({
-                title: "Content Generated!",
-                description: "Full topic content has been generated successfully.",
-                duration: 3000,
-              })
+            if (textContent?.content_data) {
+              // Parse the content_data properly
+              let extractedContent = null
+              
+              if (typeof textContent.content_data === 'string') {
+                try {
+                  const parsed = JSON.parse(textContent.content_data)
+                  extractedContent = parsed.content || textContent.content_data
+                } catch {
+                  extractedContent = textContent.content_data
+                }
+              } else if (textContent.content_data.content) {
+                extractedContent = JSON.stringify(textContent.content_data)
+              }
+              
+              if (extractedContent) {
+                setFullContent(extractedContent)
+                toast({
+                  title: "Content Generated!",
+                  description: "Full topic content has been generated successfully.",
+                  duration: 3000,
+                })
+              }
             }
           } else {
             // Check for failed job
