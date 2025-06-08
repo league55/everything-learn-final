@@ -92,3 +92,37 @@
   opacity: 0;
   transform: translateY(100%);
 }
+
+/* Mobile sidebar animations */
+@media (max-width: 768px) {
+  .mobile-sidebar-enter {
+    transform: translateX(-100%);
+  }
+  
+  .mobile-sidebar-enter-active {
+    transform: translateX(0);
+    transition: transform 300ms ease-in-out;
+  }
+  
+  .mobile-sidebar-exit {
+    transform: translateX(0);
+  }
+  
+  .mobile-sidebar-exit-active {
+    transform: translateX(-100%);
+    transition: transform 300ms ease-in-out;
+  }
+}
+
+/* Prevent scrolling when mobile sidebar is open */
+.mobile-sidebar-open {
+  overflow: hidden !important;
+}
+
+/* Touch-friendly tap targets */
+@media (max-width: 768px) {
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

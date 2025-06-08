@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { ThemeProvider } from '@/providers/theme-provider'
 import { AuthProvider } from '@/providers/auth-provider'
-import { MainLayout } from '@/components/layout/main-layout'
+import { MobileLayout } from '@/components/layout/mobile-layout'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { LandingPage } from '@/pages/landing'
 import { CoursesPage } from '@/pages/courses'
@@ -25,7 +25,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             
             {/* Main app routes - with sidebar */}
-            <Route path="/" element={<MainLayout />}>
+            <Route path="/" element={<MobileLayout />}>
               <Route index element={<LandingPage />} />
               <Route path="courses" element={<CoursesPage />} />
               <Route 
