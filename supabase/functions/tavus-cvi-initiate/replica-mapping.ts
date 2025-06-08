@@ -3,22 +3,22 @@
 export const REPLICA_MAPPING = {
   // Depth 1-3: Practice Conversations (casual, friendly experts)
   practice: {
-    technology: 'r1234567-tech-mentor',
-    business: 'r1234567-business-coach',
-    science: 'r1234567-science-tutor',
-    arts: 'r1234567-arts-guide',
-    language: 'r1234567-language-partner',
-    default: 'r1234567-general-mentor'
+    technology: 'r6ae5b6efc9d',
+    business: 'r6ae5b6efc9d',
+    science: 'r6ae5b6efc9d',
+    arts: 'r6ae5b6efc9d',
+    language: 'r6ae5b6efc9d',
+    default: 'r6ae5b6efc9d'
   },
   
   // Depth 4-5: Oral Examinations (formal, academic experts)
   exam: {
-    technology: 'r7654321-tech-professor',
-    business: 'r7654321-business-professor',
-    science: 'r7654321-science-professor',
-    arts: 'r7654321-arts-professor',
-    language: 'r7654321-language-professor',
-    default: 'r7654321-general-professor'
+    technology: 'r6ae5b6efc9d',
+    business: 'r6ae5b6efc9d',
+    science: 'r6ae5b6efc9d',
+    arts: 'r6ae5b6efc9d',
+    language: 'r6ae5b6efc9d',
+    default: 'r6ae5b6efc9d'
   }
 }
 
