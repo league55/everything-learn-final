@@ -94,7 +94,7 @@
 }
 
 /* Mobile sidebar animations */
-@media (max-width: 768px) {
+@media (max-width: 5000px) {
   .mobile-sidebar-enter {
     transform: translateX(-100%);
   }
