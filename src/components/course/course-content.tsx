@@ -359,19 +359,7 @@ export function CourseContent({
                                 {citation.publication_date && ` (${citation.publication_date})`}
                               </div>
                             )}
-                            {citation.url && (
-                              <div className="flex items-center gap-1 mt-1">
-                                <ExternalLink className="h-3 w-3" />
-                                <a 
-                                  href={citation.url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline text-xs"
-                                >
-                                  View Source
-                                </a>
-                              </div>
-                            )}
+                           
                             {citation.excerpt && (
                               <div className="text-xs text-muted-foreground mt-1 italic">
                                 "{citation.excerpt}"
