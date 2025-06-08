@@ -1,24 +1,24 @@
 // Mapping of course depth levels to Tavus replica IDs
-// These would be actual replica IDs from your Tavus account
+// Note: These are placeholder IDs - replace with actual replica IDs from your Tavus account
 export const REPLICA_MAPPING = {
   // Depth 1-3: Practice Conversations (casual, friendly experts)
   practice: {
-    technology: 'r6ae5b6efc9d',
-    business: 'r6ae5b6efc9d',
-    science: 'r6ae5b6efc9d',
-    arts: 'r6ae5b6efc9d',
-    language: 'r6ae5b6efc9d',
-    default: 'r6ae5b6efc9d'
+    technology: 'replica_practice_tech_001',
+    business: 'replica_practice_biz_001',
+    science: 'replica_practice_sci_001',
+    arts: 'replica_practice_arts_001',
+    language: 'replica_practice_lang_001',
+    default: 'replica_practice_default_001'
   },
   
   // Depth 4-5: Oral Examinations (formal, academic experts)
   exam: {
-    technology: 'r6ae5b6efc9d',
-    business: 'r6ae5b6efc9d',
-    science: 'r6ae5b6efc9d',
-    arts: 'r6ae5b6efc9d',
-    language: 'r6ae5b6efc9d',
-    default: 'r6ae5b6efc9d'
+    technology: 'replica_exam_tech_001',
+    business: 'replica_exam_biz_001',
+    science: 'replica_exam_sci_001',
+    arts: 'replica_exam_arts_001',
+    language: 'replica_exam_lang_001',
+    default: 'replica_exam_default_001'
   }
 }
 

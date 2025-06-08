@@ -39,6 +39,7 @@ export function LearnCoursePage() {
   const [tavusReplicaId, setTavusReplicaId] = useState<string | null>(null)
   const [cviConversationType, setCviConversationType] = useState<'practice' | 'exam'>('practice')
   const [isInitiatingCvi, setIsInitiatingCvi] = useState(false)
+  const [courseReadyForCompletion, setCourseReadyForCompletion] = useState(false)
   
   // Content generation states
   const [topicContent, setTopicContent] = useState<ContentItem[]>([])
@@ -303,27 +304,44 @@ export function LearnCoursePage() {
       const isLastTopic = selectedTopicIndex === courseData.syllabus.modules[selectedModuleIndex].topics.length - 1
       const isFinalCompletion = isLastModule && isLastTopic
 
-      await dbOperations.updateCourseProgress(
-        courseData.enrollment.id,
-        isLastModule ? selectedModuleIndex : selectedModuleIndex + 1,
-        isFinalCompletion
-      )
-
       if (isFinalCompletion) {
-        // Show final test button instead of immediately completing
+        // Don't mark course as completed yet - just show final test button
+        setCourseReadyForCompletion(true)
         setShowFinalTestButton(true)
         toast({
-          title: "Course Completed!",
+          title: "Course Content Completed!",
           description: "Ready for your final assessment?",
           duration: 5000,
         })
       } else {
-        setSelectedModuleIndex(selectedModuleIndex + 1)
-        setSelectedTopicIndex(0)
+        // Update progress to next module/topic
+        const nextModuleIndex = isLastTopic ? selectedModuleIndex + 1 : selectedModuleIndex
+        
+        await dbOperations.updateCourseProgress(
+          courseData.enrollment.id,
+          nextModuleIndex
+        )
+
+        // Update local state
+        setCourseData(prev => prev ? {
+          ...prev,
+          enrollment: {
+            ...prev.enrollment,
+            current_module_index: nextModuleIndex
+          }
+        } : null)
+
+        // Navigate to next topic/module
+        if (isLastTopic) {
+          setSelectedModuleIndex(selectedModuleIndex + 1)
+          setSelectedTopicIndex(0)
+        } else {
+          setSelectedTopicIndex(selectedTopicIndex + 1)
+        }
         
         toast({
-          title: "Module Completed!",
-          description: "Moving to the next module",
+          title: isLastTopic ? "Module Completed!" : "Topic Completed!",
+          description: isLastTopic ? "Moving to the next module" : "Moving to the next topic",
           duration: 3000,
         })
       }
@@ -382,21 +400,42 @@ export function LearnCoursePage() {
     }
   }
 
-  const handleCviComplete = () => {
-    setShowCviModal(false)
-    setTavusConversationId(null)
-    setTavusReplicaId(null)
-    
-    toast({
-      title: "Congratulations!",
-      description: "You have successfully completed the course!",
-      duration: 5000,
-    })
-    
-    // Navigate back to courses after a short delay
-    setTimeout(() => {
-      navigate('/courses')
-    }, 2000)
+  const handleCviComplete = async () => {
+    if (!courseData) return
+
+    try {
+      // Now actually mark the course as completed in the database
+      await dbOperations.updateCourseProgress(
+        courseData.enrollment.id,
+        selectedModuleIndex,
+        true // Mark as completed
+      )
+
+      setShowCviModal(false)
+      setTavusConversationId(null)
+      setTavusReplicaId(null)
+      setCourseReadyForCompletion(false)
+      
+      toast({
+        title: "Congratulations!",
+        description: "You have successfully completed the course!",
+        duration: 5000,
+      })
+      
+      // Navigate back to courses after a short delay
+      setTimeout(() => {
+        navigate('/courses')
+      }, 2000)
+
+    } catch (err) {
+      console.error('Failed to complete course:', err)
+      toast({
+        title: "Error",
+        description: "Failed to mark course as completed",
+        variant: "destructive",
+        duration: 3000,
+      })
+    }
   }
 
   const handleCloseCvi = () => {
