@@ -5,12 +5,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Award, Target, GraduationCap, BookOpen, Users, Star, Zap } from 'lucide-react'
 import { dbOperations } from '@/lib/supabase'
 import { useAuth } from '@/providers/auth-provider'
-import type { CourseWithDetails } from '@/lib/supabase'
+import type { CourseWithDetails, CourseConfiguration } from '@/lib/supabase'
 
 export function Achievements() {
   const { user } = useAuth()
   const [enrolledCourses, setEnrolledCourses] = useState<CourseWithDetails[]>([])
-  const [createdCourses, setCreatedCourses] = useState<number>(0)
+  const [createdCourses, setCreatedCourses] = useState<CourseConfiguration[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -30,9 +30,12 @@ export function Achievements() {
         const userEnrolledCourses = await dbOperations.getUserEnrolledCourses()
         setEnrolledCourses(userEnrolledCourses)
         
-        // Load created courses count
+        // Load created courses (should already be filtered by user_id)
         const userCreatedCourses = await dbOperations.getCourseConfigurations()
-        setCreatedCourses(userCreatedCourses.length)
+        setCreatedCourses(userCreatedCourses)
+        
+        console.log('Achievements - User ID:', user.id)
+        console.log('Achievements - Created courses:', userCreatedCourses)
         
       } catch (err) {
         console.error('Failed to load achievement data:', err)
@@ -88,10 +91,10 @@ export function Achievements() {
   const hasCompletedCourse = enrolledCourses.some(course => 
     course.user_enrollment?.status === 'completed'
   )
-  const hasCreatedCourses = createdCourses >= 5
+  const hasCreatedCourses = createdCourses.length >= 5
   const hasEnrolledInCourses = enrolledCourses.length > 0
   const isActiveLearner = enrolledCourses.length >= 3
-  const isFirstCourseCreated = createdCourses > 0
+  const isFirstCourseCreated = createdCourses.length > 0
   const completedCoursesCount = enrolledCourses.filter(course => 
     course.user_enrollment?.status === 'completed'
   ).length

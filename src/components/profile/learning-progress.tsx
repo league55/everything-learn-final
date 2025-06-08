@@ -5,12 +5,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { BookOpen, TrendingUp, Target, Award } from 'lucide-react'
 import { dbOperations } from '@/lib/supabase'
 import { useAuth } from '@/providers/auth-provider'
-import type { CourseWithDetails } from '@/lib/supabase'
+import type { CourseWithDetails, CourseConfiguration } from '@/lib/supabase'
 
 export function LearningProgress() {
   const { user } = useAuth()
   const [enrolledCourses, setEnrolledCourses] = useState<CourseWithDetails[]>([])
-  const [createdCourses, setCreatedCourses] = useState<number>(0)
+  const [createdCourses, setCreatedCourses] = useState<CourseConfiguration[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -30,9 +30,13 @@ export function LearningProgress() {
         const userEnrolledCourses = await dbOperations.getUserEnrolledCourses()
         setEnrolledCourses(userEnrolledCourses)
         
-        // Load created courses count
+        // Load created courses (should already be filtered by user_id in the database function)
         const userCreatedCourses = await dbOperations.getCourseConfigurations()
-        setCreatedCourses(userCreatedCourses.length)
+        setCreatedCourses(userCreatedCourses)
+        
+        console.log('User ID:', user.id)
+        console.log('Created courses:', userCreatedCourses)
+        console.log('Created courses count:', userCreatedCourses.length)
         
       } catch (err) {
         console.error('Failed to load progress data:', err)
@@ -164,7 +168,7 @@ export function LearningProgress() {
         <div className="pt-2 border-t">
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold text-primary">{createdCourses}</p>
+              <p className="text-2xl font-bold text-primary">{createdCourses.length}</p>
               <p className="text-xs text-muted-foreground">Courses Created</p>
             </div>
             <div>
