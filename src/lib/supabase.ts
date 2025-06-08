@@ -66,12 +66,61 @@ export interface UserEnrollment {
   updated_at: string
 }
 
+// New content system types
+export type ContentType = 'text' | 'image' | 'video' | 'audio' | 'document' | 'interactive'
+
+export interface ContentItem {
+  id: string
+  course_configuration_id: string
+  module_index: number
+  topic_index: number
+  content_type: ContentType
+  title: string
+  description: string | null
+  content_data: Record<string, any>
+  file_path: string | null
+  file_size: number | null
+  mime_type: string | null
+  order_index: number
+  metadata: Record<string, any>
+  created_at: string
+  updated_at: string
+}
+
+export interface ContentGenerationJob {
+  id: string
+  course_configuration_id: string
+  module_index: number
+  topic_index: number
+  content_type: ContentType
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  prompt: string
+  result_content_id: string | null
+  error_message: string | null
+  retries: number
+  max_retries: number
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface CourseWithDetails extends CourseConfiguration {
   syllabus?: Syllabus
   generation_job?: SyllabusGenerationJob
   enrollment_count?: number
   user_enrollment?: UserEnrollment
+  content_items?: ContentItem[]
 }
+
+// Storage bucket names
+export const STORAGE_BUCKETS = {
+  IMAGES: 'course-images',
+  VIDEOS: 'course-videos',
+  AUDIO: 'course-audio',
+  DOCUMENTS: 'course-documents',
+  INTERACTIVE: 'course-interactive'
+} as const
 
 // Database operations
 export const dbOperations = {
@@ -393,5 +442,138 @@ export const dbOperations = {
       .eq('course_configuration_id', courseConfigurationId)
 
     return retriedJob
+  },
+
+  // Content operations
+  async getTopicContent(
+    courseId: string,
+    moduleIndex: number,
+    topicIndex: number
+  ): Promise<ContentItem[]> {
+    const { data, error } = await supabase
+      .rpc('get_topic_content', {
+        p_course_id: courseId,
+        p_module_index: moduleIndex,
+        p_topic_index: topicIndex
+      })
+
+    if (error) {
+      throw new Error(`Failed to fetch topic content: ${error.message}`)
+    }
+
+    return data || []
+  },
+
+  async createContentItem(contentItem: Omit<ContentItem, 'id' | 'created_at' | 'updated_at'>): Promise<ContentItem> {
+    const { data, error } = await supabase
+      .from('content_items')
+      .insert(contentItem)
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Failed to create content item: ${error.message}`)
+    }
+
+    return data
+  },
+
+  async updateContentItem(id: string, updates: Partial<ContentItem>): Promise<ContentItem> {
+    const { data, error } = await supabase
+      .from('content_items')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Failed to update content item: ${error.message}`)
+    }
+
+    return data
+  },
+
+  async deleteContentItem(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('content_items')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      throw new Error(`Failed to delete content item: ${error.message}`)
+    }
+  },
+
+  async createContentGenerationJob(
+    courseId: string,
+    moduleIndex: number,
+    topicIndex: number,
+    contentType: ContentType,
+    prompt: string
+  ): Promise<string> {
+    const { data, error } = await supabase
+      .rpc('create_content_generation_job', {
+        p_course_id: courseId,
+        p_module_index: moduleIndex,
+        p_topic_index: topicIndex,
+        p_content_type: contentType,
+        p_prompt: prompt
+      })
+
+    if (error) {
+      throw new Error(`Failed to create content generation job: ${error.message}`)
+    }
+
+    return data
+  },
+
+  async getContentGenerationJobs(courseId: string): Promise<ContentGenerationJob[]> {
+    const { data, error } = await supabase
+      .from('content_generation_jobs')
+      .select('*')
+      .eq('course_configuration_id', courseId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw new Error(`Failed to fetch content generation jobs: ${error.message}`)
+    }
+
+    return data || []
+  },
+
+  // File upload operations
+  async uploadFile(
+    bucket: string,
+    path: string,
+    file: File,
+    options?: { cacheControl?: string; upsert?: boolean }
+  ): Promise<string> {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(path, file, options)
+
+    if (error) {
+      throw new Error(`Failed to upload file: ${error.message}`)
+    }
+
+    return data.path
+  },
+
+  async getFileUrl(bucket: string, path: string): Promise<string> {
+    const { data } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(path)
+
+    return data.publicUrl
+  },
+
+  async deleteFile(bucket: string, path: string): Promise<void> {
+    const { error } = await supabase.storage
+      .from(bucket)
+      .remove([path])
+
+    if (error) {
+      throw new Error(`Failed to delete file: ${error.message}`)
+    }
   }
 }
