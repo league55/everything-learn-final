@@ -66,15 +66,48 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Get the raw request body for logging
+    const rawBody = await req.text()
+    console.log('Raw request body:', rawBody)
+    
+    // Parse the JSON
+    let requestData
+    try {
+      requestData = JSON.parse(rawBody)
+      console.log('Parsed request data:', JSON.stringify(requestData, null, 2))
+    } catch (parseError) {
+      console.error('Failed to parse request body as JSON:', parseError)
+      throw new Error('Invalid JSON in request body')
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Parse the request body
-    const { job_id, course_configuration_id } = await req.json()
+    let job_id: string | undefined
+    let course_configuration_id: string | undefined
+
+    // Check if this is a webhook payload (has 'record' property)
+    if (requestData.record) {
+      console.log('Processing webhook payload')
+      console.log('Webhook record:', JSON.stringify(requestData.record, null, 2))
+      
+      job_id = requestData.record.id
+      course_configuration_id = requestData.record.course_configuration_id
+      
+      console.log('Extracted from webhook - job_id:', job_id, 'course_configuration_id:', course_configuration_id)
+    } else {
+      // Direct function call format
+      console.log('Processing direct function call')
+      job_id = requestData.job_id
+      course_configuration_id = requestData.course_configuration_id
+      
+      console.log('Extracted from direct call - job_id:', job_id, 'course_configuration_id:', course_configuration_id)
+    }
 
     if (!job_id && !course_configuration_id) {
+      console.error('Missing required parameters. Request data structure:', JSON.stringify(requestData, null, 2))
       throw new Error('Either job_id or course_configuration_id is required')
     }
 
@@ -82,6 +115,7 @@ Deno.serve(async (req: Request) => {
 
     // Get the job record
     if (job_id) {
+      console.log('Fetching job by ID:', job_id)
       const { data: jobData, error: jobError } = await supabase
         .from('syllabus_generation_jobs')
         .select('*')
@@ -89,11 +123,14 @@ Deno.serve(async (req: Request) => {
         .single()
 
       if (jobError) {
+        console.error('Error fetching job by ID:', jobError)
         throw new Error(`Failed to fetch job: ${jobError.message}`)
       }
       job = jobData
+      console.log('Found job:', JSON.stringify(job, null, 2))
     } else {
       // Find pending job for this course
+      console.log('Fetching pending job for course:', course_configuration_id)
       const { data: jobData, error: jobError } = await supabase
         .from('syllabus_generation_jobs')
         .select('*')
@@ -102,13 +139,16 @@ Deno.serve(async (req: Request) => {
         .single()
 
       if (jobError) {
+        console.error('Error fetching pending job for course:', jobError)
         throw new Error(`No pending job found for course: ${jobError.message}`)
       }
       job = jobData
+      console.log('Found pending job:', JSON.stringify(job, null, 2))
     }
 
     // Check if job is eligible for processing
     if (job.status !== 'pending') {
+      console.log(`Job ${job.id} is not pending (status: ${job.status})`)
       return new Response(
         JSON.stringify({ message: `Job ${job.id} is not pending (status: ${job.status})` }),
         {
@@ -120,6 +160,8 @@ Deno.serve(async (req: Request) => {
 
     // Check retry limits
     if (job.retries >= job.max_retries) {
+      console.log(`Job ${job.id} has exceeded maximum retries (${job.retries}/${job.max_retries})`)
+      
       await supabase
         .from('syllabus_generation_jobs')
         .update({ 
@@ -150,6 +192,7 @@ Deno.serve(async (req: Request) => {
       .eq('id', job.id)
 
     // Get course configuration
+    console.log('Fetching course configuration:', job.course_configuration_id)
     const { data: courseConfig, error: courseError } = await supabase
       .from('course_configuration')
       .select('*')
@@ -157,16 +200,21 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (courseError) {
+      console.error('Error fetching course configuration:', courseError)
       throw new Error(`Failed to fetch course configuration: ${courseError.message}`)
     }
 
+    console.log('Found course configuration:', JSON.stringify(courseConfig, null, 2))
+
     // Generate syllabus using OpenAI
+    console.log('Generating syllabus with AI...')
     const generatedSyllabus = await generateSyllabusWithAI(courseConfig)
 
     // Validate the generated syllabus
     let validatedSyllabus
     try {
       validatedSyllabus = GeneratedSyllabusSchema.parse(generatedSyllabus)
+      console.log('Syllabus validation successful')
     } catch (validationError) {
       console.error('Schema validation failed:', validationError)
       
@@ -190,6 +238,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Update the syllabus in the database
+    console.log('Updating syllabus in database...')
     const { error: updateError } = await supabase
       .from('syllabus')
       .update({
@@ -200,6 +249,8 @@ Deno.serve(async (req: Request) => {
       .eq('course_configuration_id', job.course_configuration_id)
 
     if (updateError) {
+      console.error('Error updating syllabus:', updateError)
+      
       // Update job as failed
       await supabase
         .from('syllabus_generation_jobs')
@@ -214,6 +265,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Mark job as completed
+    console.log('Marking job as completed...')
     await supabase
       .from('syllabus_generation_jobs')
       .update({ 
@@ -324,6 +376,7 @@ REMEMBER: Ensure all content meets the minimum length requirements:
 
 Adjust the content complexity, terminology, and source sophistication to match depth level ${courseConfig.depth}. Use advanced sources but present the information at the appropriate level for the learner.`
 
+  console.log('Making OpenAI API request...')
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -344,11 +397,13 @@ Adjust the content complexity, terminology, and source sophistication to match d
 
   if (!response.ok) {
     const error = await response.json()
+    console.error('OpenAI API error:', error)
     throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`)
   }
 
   const data = await response.json()
   const content = data.choices[0].message.content
+  console.log('OpenAI response received, parsing...')
 
   try {
     return JSON.parse(content)
