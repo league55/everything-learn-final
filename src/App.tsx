@@ -24,7 +24,7 @@ function App() {
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             
-            {/* Main app routes - with sidebar */}
+            {/* Main app routes - with universal sidebar */}
             <Route path="/" element={<MobileLayout />}>
               <Route index element={<LandingPage />} />
               <Route path="courses" element={<CoursesPage />} />

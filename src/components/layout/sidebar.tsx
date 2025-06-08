@@ -12,8 +12,9 @@ import {
   Sun,
   LogIn,
   LogOut,
-  ChevronRight,
-  Loader2
+  Loader2,
+  Menu,
+  X
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -39,7 +40,7 @@ const navigationItems = [
 ]
 
 export function Sidebar({ className }: SidebarProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const [isAuthLoading, setIsAuthLoading] = useState(false)
   const { theme, setTheme } = useTheme()
   const { user, loading, signOut } = useAuth()
@@ -57,6 +58,7 @@ export function Sidebar({ className }: SidebarProps) {
       try {
         await signOut()
         navigate('/')
+        setIsOpen(false)
       } catch (error) {
         console.error('Error signing out:', error)
       } finally {
@@ -65,45 +67,99 @@ export function Sidebar({ className }: SidebarProps) {
     } else {
       // Navigate to login
       navigate('/login')
+      setIsOpen(false)
     }
+  }
+
+  const handleNavigation = (href: string) => {
+    navigate(href)
+    setIsOpen(false)
   }
 
   const isLoggedIn = !!user
 
+  // Close sidebar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const sidebar = document.getElementById('universal-sidebar')
+      const trigger = document.getElementById('sidebar-trigger')
+      
+      if (isOpen && sidebar && trigger && 
+          !sidebar.contains(event.target as Node) && 
+          !trigger.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
+  // Close sidebar on escape key
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen])
+
   return (
-    <div
-      className={cn(
-        'fixed left-0 top-0 z-50 h-screen bg-card border-r border-border transition-all duration-300 ease-in-out',
-        isExpanded ? 'w-64' : 'w-16',
-        className
+    <>
+      {/* Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
+          onClick={() => setIsOpen(false)}
+        />
       )}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
-    >
-      <div className="flex h-full flex-col">
-        {/* Logo */}
-        <div className="flex h-16 items-center justify-center border-b border-border px-4">
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-              <span className="text-primary-foreground font-bold text-sm">O</span>
-            </div>
-            <div
-              className={cn(
-                'overflow-hidden transition-all duration-300',
-                isExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0'
-              )}
-            >
-              <span className="font-bold text-lg text-foreground whitespace-nowrap">
+
+      {/* Sidebar */}
+      <div
+        id="universal-sidebar"
+        className={cn(
+          'fixed left-0 top-0 z-50 h-screen bg-card border-r border-border transition-transform duration-300 ease-in-out w-80',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+          className
+        )}
+      >
+        <div className="flex h-full flex-col">
+          {/* Header */}
+          <div className="flex h-16 items-center justify-between border-b border-border px-4">
+            <Link to="/" className="flex items-center space-x-2" onClick={() => setIsOpen(false)}>
+              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+                <span className="text-primary-foreground font-bold text-sm">O</span>
+              </div>
+              <span className="font-bold text-lg text-foreground">
                 Orion Path
               </span>
-            </div>
-          </Link>
-        </div>
+            </Link>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(false)}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
 
-        {/* Auth Status Indicator */}
-        {isExpanded && (
-          <div className="px-4 py-2 border-b border-border/50">
-            <div className="flex items-center space-x-2 text-xs">
+          {/* Auth Status */}
+          <div className="px-4 py-3 border-b border-border/50">
+            <div className="flex items-center space-x-2 text-sm">
               <div className={cn(
                 "w-2 h-2 rounded-full flex-shrink-0",
                 loading ? "bg-yellow-500" : isLoggedIn ? "bg-green-500" : "bg-red-500"
@@ -118,101 +174,57 @@ export function Sidebar({ className }: SidebarProps) {
               </span>
             </div>
           </div>
-        )}
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-2 p-4">
-          {navigationItems.map((item) => {
-            const isActive = location.pathname === item.href
-            const isProfileRoute = item.href === '/profile'
-            
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  'flex items-center rounded-lg text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground group relative',
-                  isExpanded ? 'space-x-3 px-3 py-2' : 'justify-center py-2 px-2',
-                  isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
-                  isProfileRoute && !isLoggedIn && 'opacity-50'
-                )}
-                onClick={(e) => {
-                  if (isProfileRoute && !isLoggedIn) {
-                    e.preventDefault()
-                    navigate('/login')
-                  }
-                }}
-              >
-                <div className={cn(
-                  'flex items-center justify-center flex-shrink-0',
-                  !isExpanded && isActive && 'bg-primary/20 rounded-md',
-                  !isExpanded ? 'h-8 w-8' : 'h-5 w-5'
-                )}>
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div
+          {/* Navigation */}
+          <nav className="flex-1 space-y-2 p-4">
+            {navigationItems.map((item) => {
+              const isActive = location.pathname === item.href
+              const isProfileRoute = item.href === '/profile'
+              
+              return (
+                <Button
+                  key={item.href}
+                  variant={isActive ? "default" : "ghost"}
                   className={cn(
-                    'overflow-hidden transition-all duration-300',
-                    isExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0'
+                    'w-full justify-start space-x-3 h-12',
+                    isProfileRoute && !isLoggedIn && 'opacity-50'
                   )}
+                  onClick={() => {
+                    if (isProfileRoute && !isLoggedIn) {
+                      handleNavigation('/login')
+                    } else {
+                      handleNavigation(item.href)
+                    }
+                  }}
                 >
-                  <span className="whitespace-nowrap">{item.title}</span>
-                </div>
-                {isActive && isExpanded && (
-                  <ChevronRight className="h-4 w-4 ml-auto" />
-                )}
-              </Link>
-            )
-          })}
-        </nav>
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.title}</span>
+                </Button>
+              )
+            })}
+          </nav>
 
-        {/* Bottom controls */}
-        <div className="border-t border-border p-4 space-y-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleTheme}
-            className={cn(
-              'w-full transition-all',
-              isExpanded ? 'justify-start space-x-3 px-3' : 'justify-center px-2'
-            )}
-          >
-            <div className={cn(
-              'flex items-center justify-center flex-shrink-0',
-              !isExpanded ? 'h-8 w-8' : 'h-5 w-5'
-            )}>
+          {/* Bottom controls */}
+          <div className="border-t border-border p-4 space-y-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-start space-x-3 h-12"
+              onClick={toggleTheme}
+            >
               {theme === 'light' ? (
                 <Moon className="h-5 w-5" />
               ) : (
                 <Sun className="h-5 w-5" />
               )}
-            </div>
-            <div
-              className={cn(
-                'overflow-hidden transition-all duration-300',
-                isExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0'
-              )}
-            >
-              <span className="whitespace-nowrap">
-                {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-              </span>
-            </div>
-          </Button>
+              <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+            </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleAuthAction}
-            disabled={loading || isAuthLoading}
-            className={cn(
-              'w-full transition-all',
-              isExpanded ? 'justify-start space-x-3 px-3' : 'justify-center px-2'
-            )}
-          >
-            <div className={cn(
-              'flex items-center justify-center flex-shrink-0',
-              !isExpanded ? 'h-8 w-8' : 'h-5 w-5'
-            )}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start space-x-3 h-12"
+              onClick={handleAuthAction}
+              disabled={loading || isAuthLoading}
+            >
               {loading || isAuthLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : isLoggedIn ? (
@@ -220,14 +232,7 @@ export function Sidebar({ className }: SidebarProps) {
               ) : (
                 <LogIn className="h-5 w-5" />
               )}
-            </div>
-            <div
-              className={cn(
-                'overflow-hidden transition-all duration-300',
-                isExpanded ? 'w-auto opacity-100' : 'w-0 opacity-0'
-              )}
-            >
-              <span className="whitespace-nowrap">
+              <span>
                 {loading || isAuthLoading
                   ? 'Loading...' 
                   : isLoggedIn 
@@ -235,10 +240,25 @@ export function Sidebar({ className }: SidebarProps) {
                     : 'Sign In'
                 }
               </span>
-            </div>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Navigation Trigger */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-card/95 backdrop-blur-sm border-t border-border">
+        <div className="flex items-center justify-center p-4">
+          <Button
+            id="sidebar-trigger"
+            variant="default"
+            size="lg"
+            onClick={() => setIsOpen(true)}
+            className="rounded-full h-14 w-14 shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            <Menu className="h-6 w-6" />
           </Button>
         </div>
       </div>
-    </div>
+    </>
   )
 }
