@@ -182,12 +182,7 @@ export function CoursesPage() {
                 <h2 className="text-2xl font-bold mb-2">My Learning Progress</h2>
                 <p className="text-muted-foreground">Continue your learning journey</p>
               </div>
-              <Button asChild variant="outline">
-                <a href="/">
-                  <BookmarkPlus className="h-4 w-4 mr-2" />
-                  Create Course
-                </a>
-              </Button>
+             
             </div>
 
             {enrolledCourses.length === 0 ? (
