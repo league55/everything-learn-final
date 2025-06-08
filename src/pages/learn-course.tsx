@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/providers/auth-provider'
 import { dbOperations } from '@/lib/supabase'
-import type { CourseConfiguration, Syllabus, UserEnrollment } from '@/lib/supabase'
+import type { CourseConfiguration, Syllabus, UserEnrollment, ContentItem, ContentGenerationJob } from '@/lib/supabase'
 import { CourseSidebar } from '@/components/course/course-sidebar'
 import { CourseContent } from '@/components/course/course-content'
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,12 @@ export function LearnCoursePage() {
   const [selectedTopicIndex, setSelectedTopicIndex] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  
+  // Content generation states
+  const [topicContent, setTopicContent] = useState<ContentItem[]>([])
+  const [fullContent, setFullContent] = useState<string | null>(null)
+  const [isGeneratingFullContent, setIsGeneratingFullContent] = useState(false)
+  const [contentGenerationJobs, setContentGenerationJobs] = useState<ContentGenerationJob[]>([])
 
   useEffect(() => {
     const loadCourseData = async () => {
@@ -83,6 +89,110 @@ export function LearnCoursePage() {
     loadCourseData()
   }, [courseId, user])
 
+  // Load topic content and check for ongoing generation jobs
+  useEffect(() => {
+    const loadTopicData = async () => {
+      if (!courseData || !courseId) return
+
+      try {
+        // Load existing content for the current topic
+        const content = await dbOperations.getTopicContent(
+          courseId,
+          selectedModuleIndex,
+          selectedTopicIndex
+        )
+        setTopicContent(content)
+
+        // Check for full content
+        const textContent = content.find(item => item.content_type === 'text')
+        if (textContent?.content_data?.content) {
+          setFullContent(textContent.content_data.content)
+        } else {
+          setFullContent(null)
+        }
+
+        // Load content generation jobs for this topic
+        const jobs = await dbOperations.getTopicContentGenerationJobs(
+          courseId,
+          selectedModuleIndex,
+          selectedTopicIndex
+        )
+        setContentGenerationJobs(jobs)
+
+        // Check if there's an ongoing generation job
+        const ongoingJob = jobs.find(job => 
+          job.status === 'pending' || job.status === 'processing'
+        )
+        setIsGeneratingFullContent(!!ongoingJob)
+
+      } catch (err) {
+        console.error('Failed to load topic data:', err)
+      }
+    }
+
+    loadTopicData()
+  }, [courseData, courseId, selectedModuleIndex, selectedTopicIndex])
+
+  // Poll for job completion
+  useEffect(() => {
+    if (!isGeneratingFullContent || !courseId) return
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const jobs = await dbOperations.getTopicContentGenerationJobs(
+          courseId,
+          selectedModuleIndex,
+          selectedTopicIndex
+        )
+        
+        const ongoingJob = jobs.find(job => 
+          job.status === 'pending' || job.status === 'processing'
+        )
+
+        if (!ongoingJob) {
+          setIsGeneratingFullContent(false)
+          
+          // Check if job completed successfully
+          const completedJob = jobs.find(job => job.status === 'completed')
+          if (completedJob) {
+            // Reload topic content
+            const content = await dbOperations.getTopicContent(
+              courseId,
+              selectedModuleIndex,
+              selectedTopicIndex
+            )
+            setTopicContent(content)
+
+            const textContent = content.find(item => item.content_type === 'text')
+            if (textContent?.content_data?.content) {
+              setFullContent(textContent.content_data.content)
+              toast({
+                title: "Content Generated!",
+                description: "Full topic content has been generated successfully.",
+                duration: 3000,
+              })
+            }
+          } else {
+            // Check for failed job
+            const failedJob = jobs.find(job => job.status === 'failed')
+            if (failedJob) {
+              toast({
+                title: "Generation Failed",
+                description: failedJob.error_message || "Failed to generate content. Please try again.",
+                variant: "destructive",
+                duration: 5000,
+              })
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to poll job status:', err)
+      }
+    }, 3000) // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval)
+  }, [isGeneratingFullContent, courseId, selectedModuleIndex, selectedTopicIndex, toast])
+
   const handleTopicSelect = async (moduleIndex: number, topicIndex: number) => {
     setSelectedModuleIndex(moduleIndex)
     setSelectedTopicIndex(topicIndex)
@@ -112,6 +222,36 @@ export function LearnCoursePage() {
       } catch (err) {
         console.error('Failed to update progress:', err)
       }
+    }
+  }
+
+  const handleGenerateFullContent = async () => {
+    if (!courseId || isGeneratingFullContent) return
+
+    try {
+      setIsGeneratingFullContent(true)
+      
+      await dbOperations.triggerFullContentGeneration(
+        courseId,
+        selectedModuleIndex,
+        selectedTopicIndex
+      )
+
+      toast({
+        title: "Content Generation Started",
+        description: "Generating comprehensive content for this topic...",
+        duration: 3000,
+      })
+
+    } catch (err) {
+      console.error('Failed to trigger content generation:', err)
+      setIsGeneratingFullContent(false)
+      toast({
+        title: "Generation Failed",
+        description: err instanceof Error ? err.message : "Failed to start content generation",
+        variant: "destructive",
+        duration: 3000,
+      })
     }
   }
 
@@ -259,6 +399,9 @@ export function LearnCoursePage() {
             topicIndex={selectedTopicIndex}
             totalModules={courseData.syllabus.modules.length}
             enrollment={courseData.enrollment}
+            fullContent={fullContent}
+            onGenerateFullContent={handleGenerateFullContent}
+            isGeneratingFullContent={isGeneratingFullContent}
             onMarkComplete={handleMarkComplete}
             onNavigate={handleTopicSelect}
           />

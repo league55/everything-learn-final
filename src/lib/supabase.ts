@@ -29,6 +29,7 @@ export interface SyllabusTopic {
   summary: string
   keywords: string[]
   content: string
+  full_content_path?: string // Added for Phase 3
 }
 
 export interface Syllabus {
@@ -539,6 +540,81 @@ export const dbOperations = {
     }
 
     return data || []
+  },
+
+  // Get content generation jobs for specific topic
+  async getTopicContentGenerationJobs(
+    courseId: string,
+    moduleIndex: number,
+    topicIndex: number
+  ): Promise<ContentGenerationJob[]> {
+    const { data, error } = await supabase
+      .from('content_generation_jobs')
+      .select('*')
+      .eq('course_configuration_id', courseId)
+      .eq('module_index', moduleIndex)
+      .eq('topic_index', topicIndex)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw new Error(`Failed to fetch topic content generation jobs: ${error.message}`)
+    }
+
+    return data || []
+  },
+
+  // Trigger full content generation for a topic
+  async triggerFullContentGeneration(
+    courseId: string,
+    moduleIndex: number,
+    topicIndex: number
+  ): Promise<string> {
+    // Create a content generation job for text content
+    const prompt = `Generate comprehensive learning content for this topic. Include detailed explanations, examples, and practical applications appropriate for the course depth level.`
+    
+    const jobId = await this.createContentGenerationJob(
+      courseId,
+      moduleIndex,
+      topicIndex,
+      'text',
+      prompt
+    )
+
+    // Invoke the edge function to process the job
+    try {
+      const { data, error } = await supabase.functions.invoke('process-content-job', {
+        body: {
+          job_id: jobId,
+          course_configuration_id: courseId,
+          module_index: moduleIndex,
+          topic_index: topicIndex,
+          content_type: 'text'
+        }
+      })
+
+      if (error) {
+        console.warn('Failed to invoke edge function:', error)
+        // Job is still created, it will be processed by the trigger
+      }
+    } catch (invokeError) {
+      console.warn('Failed to invoke edge function:', invokeError)
+      // Job is still created, it will be processed by the trigger
+    }
+
+    return jobId
+  },
+
+  // Get full content from storage
+  async getFullContent(path: string): Promise<string> {
+    try {
+      const response = await fetch(path)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch content: ${response.statusText}`)
+      }
+      return await response.text()
+    } catch (error) {
+      throw new Error(`Failed to fetch full content: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   },
 
   // File upload operations

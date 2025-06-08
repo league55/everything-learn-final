@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -14,7 +15,11 @@ import {
   BookOpen,
   Clock,
   Target,
-  User
+  User,
+  Loader2,
+  Sparkles,
+  FileText,
+  Info
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import 'highlight.js/styles/github-dark.css'
@@ -27,6 +32,9 @@ interface CourseContentProps {
   topicIndex: number
   totalModules: number
   enrollment: UserEnrollment
+  fullContent?: string | null
+  onGenerateFullContent: () => void
+  isGeneratingFullContent: boolean
   onMarkComplete: () => void
   onNavigate: (moduleIndex: number, topicIndex: number) => void
 }
@@ -39,6 +47,9 @@ export function CourseContent({
   topicIndex,
   totalModules,
   enrollment,
+  fullContent,
+  onGenerateFullContent,
+  isGeneratingFullContent,
   onMarkComplete,
   onNavigate
 }: CourseContentProps) {
@@ -141,69 +152,174 @@ export function CourseContent({
       <div className="flex-1 flex">
         <ScrollArea className="flex-1">
           <div className="max-w-4xl mx-auto p-6">
-            {/* Content */}
-            <div className="prose prose-neutral dark:prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-                components={{
-                  h1: ({ children }) => (
-                    <h1 className="text-3xl font-bold mb-6 mt-8 first:mt-0">{children}</h1>
-                  ),
-                  h2: ({ children }) => (
-                    <h2 className="text-2xl font-semibold mb-4 mt-8 first:mt-0">{children}</h2>
-                  ),
-                  h3: ({ children }) => (
-                    <h3 className="text-xl font-semibold mb-3 mt-6 first:mt-0">{children}</h3>
-                  ),
-                  p: ({ children }) => (
-                    <p className="text-base leading-7 mb-4">{children}</p>
-                  ),
-                  ul: ({ children }) => (
-                    <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>
-                  ),
-                  ol: ({ children }) => (
-                    <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>
-                  ),
-                  blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground">
-                      {children}
-                    </blockquote>
-                  ),
-                  code: ({ children, className }) => {
-                    const isInline = !className
-                    return isInline ? (
-                      <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
+            {/* Topic Overview */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Info className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">Topic Overview</h2>
+              </div>
+              <div className="prose prose-neutral dark:prose-invert max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeHighlight]}
+                  components={{
+                    h1: ({ children }) => (
+                      <h1 className="text-2xl font-bold mb-4 mt-6 first:mt-0">{children}</h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-xl font-semibold mb-3 mt-6 first:mt-0">{children}</h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-lg font-semibold mb-2 mt-4 first:mt-0">{children}</h3>
+                    ),
+                    p: ({ children }) => (
+                      <p className="text-base leading-7 mb-4">{children}</p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground">
                         {children}
-                      </code>
-                    ) : (
-                      <code className={className}>{children}</code>
-                    )
-                  },
-                  pre: ({ children }) => (
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4">
-                      {children}
-                    </pre>
-                  ),
-                  table: ({ children }) => (
-                    <div className="overflow-x-auto my-4">
-                      <table className="min-w-full border border-border">
+                      </blockquote>
+                    ),
+                    code: ({ children, className }) => {
+                      const isInline = !className
+                      return isInline ? (
+                        <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
+                          {children}
+                        </code>
+                      ) : (
+                        <code className={className}>{children}</code>
+                      )
+                    },
+                    pre: ({ children }) => (
+                      <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4">
                         {children}
-                      </table>
-                    </div>
-                  ),
-                  th: ({ children }) => (
-                    <th className="border border-border px-4 py-2 bg-muted text-left font-semibold">
-                      {children}
-                    </th>
-                  ),
-                  td: ({ children }) => (
-                    <td className="border border-border px-4 py-2">{children}</td>
-                  ),
-                }}
-              >
-                {topic.content}
-              </ReactMarkdown>
+                      </pre>
+                    ),
+                  }}
+                >
+                  {topic.content}
+                </ReactMarkdown>
+              </div>
+            </div>
+
+            <Separator className="my-8" />
+
+            {/* Full Content Section */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">Comprehensive Content</h2>
+                </div>
+                
+                {!fullContent && !isGeneratingFullContent && (
+                  <Button 
+                    onClick={onGenerateFullContent}
+                    className="flex items-center gap-2"
+                    size="sm"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Generate Topic Content
+                  </Button>
+                )}
+              </div>
+
+              {/* Content Display */}
+              {isGeneratingFullContent ? (
+                <div className="flex flex-col items-center justify-center py-12 bg-muted/20 rounded-lg border-2 border-dashed border-muted-foreground/25">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Generating Content...</h3>
+                  <p className="text-muted-foreground text-center max-w-md">
+                    Our AI is creating comprehensive learning content for this topic. 
+                    This may take a few moments.
+                  </p>
+                </div>
+              ) : fullContent ? (
+                <div className="prose prose-neutral dark:prose-invert max-w-none">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeHighlight]}
+                    components={{
+                      h1: ({ children }) => (
+                        <h1 className="text-3xl font-bold mb-6 mt-8 first:mt-0">{children}</h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 className="text-2xl font-semibold mb-4 mt-8 first:mt-0">{children}</h2>
+                      ),
+                      h3: ({ children }) => (
+                        <h3 className="text-xl font-semibold mb-3 mt-6 first:mt-0">{children}</h3>
+                      ),
+                      p: ({ children }) => (
+                        <p className="text-base leading-7 mb-4">{children}</p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>
+                      ),
+                      blockquote: ({ children }) => (
+                        <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground">
+                          {children}
+                        </blockquote>
+                      ),
+                      code: ({ children, className }) => {
+                        const isInline = !className
+                        return isInline ? (
+                          <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
+                            {children}
+                          </code>
+                        ) : (
+                          <code className={className}>{children}</code>
+                        )
+                      },
+                      pre: ({ children }) => (
+                        <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4">
+                          {children}
+                        </pre>
+                      ),
+                      table: ({ children }) => (
+                        <div className="overflow-x-auto my-4">
+                          <table className="min-w-full border border-border">
+                            {children}
+                          </table>
+                        </div>
+                      ),
+                      th: ({ children }) => (
+                        <th className="border border-border px-4 py-2 bg-muted text-left font-semibold">
+                          {children}
+                        </th>
+                      ),
+                      td: ({ children }) => (
+                        <td className="border border-border px-4 py-2">{children}</td>
+                      ),
+                    }}
+                  >
+                    {fullContent}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-muted/10 rounded-lg border-2 border-dashed border-muted-foreground/25">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Comprehensive Content Yet</h3>
+                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                    Generate detailed learning content with examples, explanations, and practical applications.
+                  </p>
+                  <Button 
+                    onClick={onGenerateFullContent}
+                    className="flex items-center gap-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Generate Topic Content
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Learning Objectives Section */}
