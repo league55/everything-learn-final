@@ -1,14 +1,14 @@
 import { Outlet } from 'react-router-dom'
-import { Sidebar } from './sidebar'
+import { ResponsiveSidebar } from './responsive-sidebar'
 
 export function MobileLayout() {
   return (
     <div className="flex h-screen bg-background">
-      {/* Universal Sidebar */}
-      <Sidebar />
+      {/* Responsive Sidebar */}
+      <ResponsiveSidebar />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
     </div>

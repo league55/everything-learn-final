@@ -105,8 +105,3 @@ button, a {
   min-height: 44px;
   min-width: 44px;
 }
-
-/* Bottom navigation spacing */
-.bottom-nav-spacing {
-  padding-bottom: 88px; /* Space for bottom navigation */
-}
