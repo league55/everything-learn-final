@@ -1,23 +1,30 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { BookOpen } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { BookOpen, TrendingUp, Target, Award } from 'lucide-react'
 import { dbOperations } from '@/lib/supabase'
+import { useAuth } from '@/providers/auth-provider'
 import type { CourseWithDetails } from '@/lib/supabase'
 
-interface LearningProgressProps {
-  // We'll fetch enrolled courses directly instead of using props
-}
-
-export function LearningProgress({}: LearningProgressProps) {
+export function LearningProgress() {
+  const { user } = useAuth()
   const [enrolledCourses, setEnrolledCourses] = useState<CourseWithDetails[]>([])
   const [createdCourses, setCreatedCourses] = useState<number>(0)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const loadProgressData = async () => {
+      if (!user) {
+        setError('User not authenticated')
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
+        setError(null)
         
         // Load enrolled courses for progress tracking
         const userEnrolledCourses = await dbOperations.getUserEnrolledCourses()
@@ -29,13 +36,14 @@ export function LearningProgress({}: LearningProgressProps) {
         
       } catch (err) {
         console.error('Failed to load progress data:', err)
+        setError('Failed to load learning progress data')
       } finally {
         setLoading(false)
       }
     }
 
     loadProgressData()
-  }, [])
+  }, [user])
 
   const completedCourses = enrolledCourses.filter(course => 
     course.user_enrollment?.status === 'completed'
@@ -45,17 +53,27 @@ export function LearningProgress({}: LearningProgressProps) {
     course.user_enrollment?.status === 'active'
   ).length
 
+  // Calculate average progress across all enrolled courses
+  const averageProgress = enrolledCourses.length > 0 
+    ? enrolledCourses.reduce((acc, course) => {
+        if (!course.syllabus?.modules || course.syllabus.modules.length === 0) return acc
+        const progress = (course.user_enrollment?.current_module_index || 0) / course.syllabus.modules.length
+        return acc + progress
+      }, 0) / enrolledCourses.length * 100
+    : 0
+
   if (loading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
+            <TrendingUp className="h-5 w-5" />
             Learning Progress
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-muted rounded"></div>
             <div className="h-4 bg-muted rounded"></div>
             <div className="h-4 bg-muted rounded"></div>
             <div className="h-4 bg-muted rounded"></div>
@@ -65,51 +83,95 @@ export function LearningProgress({}: LearningProgressProps) {
     )
   }
 
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Learning Progress
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5" />
+          <TrendingUp className="h-5 w-5" />
           Learning Progress
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span>Courses Created</span>
-            <span>{createdCourses}</span>
-          </div>
-          <Progress value={Math.min(createdCourses * 20, 100)} className="h-2" />
-        </div>
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span>Enrolled Courses</span>
-            <span>{enrolledCourses.length}</span>
+            <span className="flex items-center gap-1">
+              <BookOpen className="h-3 w-3" />
+              Enrolled Courses
+            </span>
+            <span className="font-medium">{enrolledCourses.length}</span>
           </div>
           <Progress 
             value={Math.min(enrolledCourses.length * 25, 100)} 
             className="h-2" 
           />
         </div>
+        
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span>Completed Courses</span>
-            <span>{completedCourses}/{enrolledCourses.length}</span>
+            <span className="flex items-center gap-1">
+              <Award className="h-3 w-3" />
+              Completed Courses
+            </span>
+            <span className="font-medium">{completedCourses}/{enrolledCourses.length}</span>
           </div>
           <Progress 
             value={enrolledCourses.length > 0 ? (completedCourses / enrolledCourses.length) * 100 : 0} 
             className="h-2" 
           />
         </div>
+        
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span>Active Courses</span>
-            <span>{activeCourses}</span>
+            <span className="flex items-center gap-1">
+              <Target className="h-3 w-3" />
+              Active Learning
+            </span>
+            <span className="font-medium">{activeCourses} active</span>
           </div>
           <Progress 
             value={enrolledCourses.length > 0 ? (activeCourses / enrolledCourses.length) * 100 : 0} 
             className="h-2" 
           />
+        </div>
+        
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span>Average Progress</span>
+            <span className="font-medium">{Math.round(averageProgress)}%</span>
+          </div>
+          <Progress value={averageProgress} className="h-2" />
+        </div>
+
+        {/* Summary stats */}
+        <div className="pt-2 border-t">
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold text-primary">{createdCourses}</p>
+              <p className="text-xs text-muted-foreground">Courses Created</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-primary">{enrolledCourses.length}</p>
+              <p className="text-xs text-muted-foreground">Learning Paths</p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
