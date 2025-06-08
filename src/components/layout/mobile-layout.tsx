@@ -8,7 +8,7 @@ export function MobileLayout() {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-0 md:ml-16">
         <Outlet />
       </main>
     </div>
