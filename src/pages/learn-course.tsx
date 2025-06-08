@@ -364,29 +364,22 @@ export function LearnCoursePage() {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <div className={cn(
-        "transition-all duration-300 border-r border-border",
-        sidebarCollapsed ? "w-0" : "w-80"
-      )}>
-        <div className="h-full overflow-hidden">
-          <CourseSidebar
-            course={courseData.configuration}
-            syllabus={courseData.syllabus}
-            enrollment={courseData.enrollment}
-            selectedModuleIndex={selectedModuleIndex}
-            selectedTopicIndex={selectedTopicIndex}
-            onTopicSelect={handleTopicSelect}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            collapsed={sidebarCollapsed}
-          />
-        </div>
-      </div>
+      <CourseSidebar
+        course={courseData.configuration}
+        syllabus={courseData.syllabus}
+        enrollment={courseData.enrollment}
+        selectedModuleIndex={selectedModuleIndex}
+        selectedTopicIndex={selectedTopicIndex}
+        onTopicSelect={handleTopicSelect}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        collapsed={sidebarCollapsed}
+      />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 md:ml-0">
         {/* Header */}
-        <div className="border-b border-border p-4 bg-card">
+        <div className="border-b border-border p-4 bg-card md:block hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
@@ -421,7 +414,7 @@ export function LearnCoursePage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden pb-20 md:pb-0">
           <CourseContent
             course={courseData.configuration}
             module={currentModule}

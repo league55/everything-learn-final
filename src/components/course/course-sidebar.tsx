@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import type { CourseConfiguration, Syllabus, UserEnrollment } from '@/lib/supabase'
 import { 
@@ -12,7 +13,11 @@ import {
   CheckCircle, 
   Circle,
   Clock,
-  Target
+  Target,
+  Search,
+  X,
+  Menu,
+  List
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -36,8 +41,10 @@ export function CourseSidebar({
   selectedTopicIndex,
   onTopicSelect,
   searchQuery,
+  onSearchChange,
   collapsed
 }: CourseSidebarProps) {
+  const [isOpen, setIsOpen] = useState(false)
   const [expandedModules, setExpandedModules] = useState<Set<number>>(
     new Set([selectedModuleIndex])
   )
@@ -50,6 +57,11 @@ export function CourseSidebar({
       newExpanded.add(moduleIndex)
     }
     setExpandedModules(newExpanded)
+  }
+
+  const handleTopicSelect = (moduleIndex: number, topicIndex: number) => {
+    onTopicSelect(moduleIndex, topicIndex)
+    setIsOpen(false) // Close sidebar on mobile after selection
   }
 
   const getModuleProgress = (moduleIndex: number) => {
@@ -76,13 +88,101 @@ export function CourseSidebar({
 
   const totalProgress = Math.round((enrollment.current_module_index / syllabus.modules.length) * 100)
 
-  if (collapsed) return null
+  // Close sidebar when clicking outside (mobile)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const sidebar = document.getElementById('course-sidebar')
+      const trigger = document.getElementById('course-sidebar-trigger')
+      
+      if (isOpen && sidebar && trigger && 
+          !sidebar.contains(event.target as Node) && 
+          !trigger.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
 
-  return (
-    <div className="flex flex-col h-full bg-card">
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
+  // Close sidebar on escape key
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen])
+
+  // Desktop sidebar (hidden on mobile)
+  const DesktopSidebar = () => (
+    <div className={cn(
+      "hidden md:flex flex-col h-full bg-card transition-all duration-300",
+      collapsed ? "w-0 overflow-hidden" : "w-80"
+    )}>
+      <SidebarContent />
+    </div>
+  )
+
+  // Mobile sidebar (overlay)
+  const MobileSidebar = () => (
+    <>
+      {/* Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <div
+        id="course-sidebar"
+        className={cn(
+          'fixed left-0 top-0 z-50 h-screen bg-card border-r border-border transition-transform duration-300 ease-in-out w-80 md:hidden',
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <div className="flex h-full flex-col">
+          {/* Mobile Header */}
+          <div className="flex h-16 items-center justify-between border-b border-border px-4">
+            <h2 className="font-semibold text-lg line-clamp-1">
+              Course Content
+            </h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(false)}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <SidebarContent />
+        </div>
+      </div>
+    </>
+  )
+
+  // Shared sidebar content
+  const SidebarContent = () => (
+    <>
       {/* Course Header */}
       <div className="p-4 border-b border-border">
-        <h2 className="font-semibold text-lg line-clamp-2 mb-2">
+        <h2 className="font-semibold text-lg line-clamp-2 mb-2 md:block hidden">
           {course.topic}
         </h2>
         
@@ -103,6 +203,19 @@ export function CourseSidebar({
             <Target className="h-3 w-3" />
             <span>Module {enrollment.current_module_index + 1}</span>
           </div>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="p-4 border-b border-border">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search topics..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9"
+          />
         </div>
       </div>
 
@@ -184,7 +297,7 @@ export function CourseSidebar({
                           isSelected && "bg-primary text-primary-foreground",
                           !isAccessible && "opacity-50"
                         )}
-                        onClick={() => onTopicSelect(moduleIndex, actualTopicIndex)}
+                        onClick={() => handleTopicSelect(moduleIndex, actualTopicIndex)}
                         disabled={!isAccessible}
                       >
                         <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -236,6 +349,49 @@ export function CourseSidebar({
           </span>
         </div>
       </div>
+    </>
+  )
+
+  // Mobile trigger button (bottom navigation style)
+  const MobileTrigger = () => (
+    <div className="fixed bottom-0 left-0 right-0 z-30 bg-card/95 backdrop-blur-sm border-t border-border md:hidden">
+      <div className="flex items-center justify-between p-4">
+        {/* Course Progress Indicator */}
+        <div className="flex items-center gap-3 flex-1">
+          <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground">Progress</span>
+            <span className="text-sm font-medium">{totalProgress}%</span>
+          </div>
+          <Progress value={totalProgress} className="h-2 flex-1 max-w-24" />
+        </div>
+
+        {/* Sidebar Toggle Button */}
+        <Button
+          id="course-sidebar-trigger"
+          variant="default"
+          size="lg"
+          onClick={() => setIsOpen(true)}
+          className="rounded-full h-12 w-12 shadow-lg hover:shadow-xl transition-all duration-200 flex flex-col items-center justify-center gap-0.5"
+        >
+          {/* Custom Course Menu Icon */}
+          <div className="flex flex-col items-center justify-center gap-0.5">
+            <List className="h-5 w-5" />
+          </div>
+        </Button>
+      </div>
     </div>
+  )
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <DesktopSidebar />
+      
+      {/* Mobile Sidebar */}
+      <MobileSidebar />
+      
+      {/* Mobile Trigger */}
+      <MobileTrigger />
+    </>
   )
 }
