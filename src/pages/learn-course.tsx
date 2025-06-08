@@ -5,6 +5,8 @@ import { dbOperations } from '@/lib/supabase'
 import type { CourseConfiguration, Syllabus, UserEnrollment, ContentItem, ContentGenerationJob } from '@/lib/supabase'
 import { CourseSidebar } from '@/components/course/course-sidebar'
 import { CourseContent } from '@/components/course/course-content'
+import { FinalTestButton } from '@/components/course/final-test-button'
+import { CviInterfaceModal } from '@/components/course/cvi-interface-modal'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
@@ -31,6 +33,12 @@ export function LearnCoursePage() {
   const [selectedTopicIndex, setSelectedTopicIndex] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [showFinalTestButton, setShowFinalTestButton] = useState(false)
+  const [showCviModal, setShowCviModal] = useState(false)
+  const [tavusConversationId, setTavusConversationId] = useState<string | null>(null)
+  const [tavusReplicaId, setTavusReplicaId] = useState<string | null>(null)
+  const [cviConversationType, setCviConversationType] = useState<'practice' | 'exam'>('practice')
+  const [isInitiatingCvi, setIsInitiatingCvi] = useState(false)
   
   // Content generation states
   const [topicContent, setTopicContent] = useState<ContentItem[]>([])
@@ -292,20 +300,23 @@ export function LearnCoursePage() {
     try {
       const totalModules = courseData.syllabus.modules.length
       const isLastModule = selectedModuleIndex === totalModules - 1
+      const isLastTopic = selectedTopicIndex === courseData.syllabus.modules[selectedModuleIndex].topics.length - 1
+      const isFinalCompletion = isLastModule && isLastTopic
 
       await dbOperations.updateCourseProgress(
         courseData.enrollment.id,
         isLastModule ? selectedModuleIndex : selectedModuleIndex + 1,
-        isLastModule
+        isFinalCompletion
       )
 
-      if (isLastModule) {
+      if (isFinalCompletion) {
+        // Show final test button instead of immediately completing
+        setShowFinalTestButton(true)
         toast({
-          title: "Congratulations!",
-          description: "You have completed the course!",
+          title: "Course Completed!",
+          description: "Ready for your final assessment?",
           duration: 5000,
         })
-        navigate('/courses')
       } else {
         setSelectedModuleIndex(selectedModuleIndex + 1)
         setSelectedTopicIndex(0)
@@ -325,6 +336,74 @@ export function LearnCoursePage() {
         duration: 3000,
       })
     }
+  }
+
+  const handleInitiateTest = async (conversationType: 'practice' | 'exam') => {
+    if (!courseData || !user) return
+
+    setIsInitiatingCvi(true)
+    setCviConversationType(conversationType)
+
+    try {
+      const userName = user.email?.split('@')[0] || user.user_metadata?.name || 'Student'
+      const currentModule = courseData.syllabus.modules[selectedModuleIndex]
+      
+      const response = await dbOperations.initiateTavusCviSession(
+        courseData.configuration.id,
+        user.id,
+        userName,
+        courseData.configuration.depth,
+        conversationType,
+        courseData.configuration.topic,
+        currentModule.summary
+      )
+
+      setTavusConversationId(response.conversation_id)
+      setTavusReplicaId(response.replica_id)
+      setShowFinalTestButton(false)
+      setShowCviModal(true)
+
+      toast({
+        title: "Session Initiated",
+        description: "Connecting you with your AI expert...",
+        duration: 3000,
+      })
+
+    } catch (err) {
+      console.error('Failed to initiate CVI session:', err)
+      toast({
+        title: "Connection Failed",
+        description: err instanceof Error ? err.message : "Failed to start video session",
+        variant: "destructive",
+        duration: 5000,
+      })
+    } finally {
+      setIsInitiatingCvi(false)
+    }
+  }
+
+  const handleCviComplete = () => {
+    setShowCviModal(false)
+    setTavusConversationId(null)
+    setTavusReplicaId(null)
+    
+    toast({
+      title: "Congratulations!",
+      description: "You have successfully completed the course!",
+      duration: 5000,
+    })
+    
+    // Navigate back to courses after a short delay
+    setTimeout(() => {
+      navigate('/courses')
+    }, 2000)
+  }
+
+  const handleCloseCvi = () => {
+    setShowCviModal(false)
+    setTavusConversationId(null)
+    setTavusReplicaId(null)
+    setShowFinalTestButton(true) // Allow them to try again
   }
 
   if (loading) {
@@ -431,6 +510,27 @@ export function LearnCoursePage() {
           />
         </div>
       </div>
+
+      {/* Final Test Button Modal */}
+      {showFinalTestButton && courseData && (
+        <FinalTestButton
+          course={courseData.configuration}
+          enrollment={courseData.enrollment}
+          onTestInitiate={handleInitiateTest}
+          isLoading={isInitiatingCvi}
+        />
+      )}
+
+      {/* CVI Interface Modal */}
+      {showCviModal && tavusConversationId && tavusReplicaId && (
+        <CviInterfaceModal
+          tavusConversationId={tavusConversationId}
+          tavusReplicaId={tavusReplicaId}
+          conversationType={cviConversationType}
+          onClose={handleCloseCvi}
+          onComplete={handleCviComplete}
+        />
+      )}
     </div>
   )
 }

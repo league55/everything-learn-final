@@ -114,6 +114,21 @@ export interface CourseWithDetails extends CourseConfiguration {
   content_items?: ContentItem[]
 }
 
+// Video conversation types
+export interface VideoConversation {
+  id: string
+  user_id: string
+  course_id: string
+  conversation_type: 'practice' | 'exam'
+  tavus_replica_id: string
+  tavus_conversation_id: string
+  status: 'initiated' | 'active' | 'ended' | 'failed'
+  session_log: Record<string, any>
+  error_message: string | null
+  created_at: string
+  updated_at: string
+}
+
 // Storage bucket names
 export const STORAGE_BUCKETS = {
   IMAGES: 'course-images',
@@ -615,6 +630,49 @@ export const dbOperations = {
     } catch (error) {
       throw new Error(`Failed to fetch full content: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
+  },
+
+  // Tavus CVI operations
+  async initiateTavusCviSession(
+    courseId: string,
+    userId: string,
+    userName: string,
+    courseDepth: number,
+    conversationType: 'practice' | 'exam',
+    courseTopic: string,
+    moduleSummary: string
+  ): Promise<{ conversation_id: string; replica_id: string; status: string }> {
+    const { data, error } = await supabase.functions.invoke('tavus-cvi-initiate', {
+      body: {
+        courseId,
+        userId,
+        userName,
+        courseDepth,
+        conversationType,
+        courseTopic,
+        moduleSummary
+      }
+    })
+
+    if (error) {
+      throw new Error(`Failed to initiate CVI session: ${error.message}`)
+    }
+
+    return data
+  },
+
+  async getVideoConversations(userId?: string): Promise<VideoConversation[]> {
+    const { data, error } = await supabase
+      .from('video_conversations')
+      .select('*')
+      .eq(userId ? 'user_id' : 'user_id', userId || (await supabase.auth.getUser()).data.user?.id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw new Error(`Failed to fetch video conversations: ${error.message}`)
+    }
+
+    return data || []
   },
 
   // File upload operations
