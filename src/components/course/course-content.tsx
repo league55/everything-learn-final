@@ -121,8 +121,8 @@ export function CourseContent({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Content Header */}
-      <div className="border-b border-border p-6 bg-card">
+      {/* Content Header - Fixed */}
+      <div className="flex-shrink-0 border-b border-border p-6 bg-card">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
           <span>{course.topic}</span>
@@ -178,10 +178,10 @@ export function CourseContent({
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex">
-        <ScrollArea className="flex-1">
-          <div className="max-w-4xl mx-auto p-6">
+      {/* Main Content - Scrollable */}
+      <div className="flex-1 min-h-0">
+        <ScrollArea className="h-full">
+          <div className="max-w-4xl mx-auto p-6 pb-24">
             {/* Topic Overview */}
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-4">
@@ -458,8 +458,8 @@ export function CourseContent({
         </ScrollArea>
       </div>
 
-      {/* Navigation Footer */}
-      <div className="border-t border-border p-4 bg-card">
+      {/* Navigation Footer - Fixed */}
+      <div className="flex-shrink-0 border-t border-border p-4 bg-card">
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
