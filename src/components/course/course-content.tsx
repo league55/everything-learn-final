@@ -407,16 +407,6 @@ export function CourseContent({
                 <div className="text-center py-12 bg-muted/10 rounded-lg border-2 border-dashed border-muted-foreground/25">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No Comprehensive Content Yet</h3>
-                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                    Generate detailed learning content with examples, explanations, and practical applications.
-                  </p>
-                  <Button 
-                    onClick={onGenerateFullContent}
-                    className="flex items-center gap-2"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Generate Topic Content
-                  </Button>
                 </div>
               )}
             </div>
