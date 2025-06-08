@@ -41,6 +41,19 @@ export interface Syllabus {
   updated_at: string
 }
 
+export interface SyllabusGenerationJob {
+  id: string
+  course_configuration_id: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  retries: number
+  max_retries: number
+  error_message: string | null
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface UserEnrollment {
   id: string
   user_id: string
@@ -55,6 +68,7 @@ export interface UserEnrollment {
 
 export interface CourseWithDetails extends CourseConfiguration {
   syllabus?: Syllabus
+  generation_job?: SyllabusGenerationJob
   enrollment_count?: number
   user_enrollment?: UserEnrollment
 }
@@ -105,7 +119,8 @@ export const dbOperations = {
       .from('course_configuration')
       .select(`
         *,
-        syllabus!inner(*)
+        syllabus!inner(*),
+        syllabus_generation_jobs(*)
       `)
       .eq('syllabus.status', 'completed')
       .order('created_at', { ascending: false })
@@ -154,6 +169,7 @@ export const dbOperations = {
       return {
         ...course,
         syllabus: course.syllabus?.[0],
+        generation_job: course.syllabus_generation_jobs?.[0],
         enrollment_count: enrollmentCount,
         user_enrollment: userEnrollment
       }
@@ -167,7 +183,8 @@ export const dbOperations = {
       .select(`
         *,
         course_configuration!inner(*),
-        syllabus:course_configuration!inner(syllabus(*))
+        syllabus:course_configuration!inner(syllabus(*)),
+        generation_jobs:course_configuration!inner(syllabus_generation_jobs(*))
       `)
       .eq('status', 'active')
       .order('enrolled_at', { ascending: false })
@@ -181,6 +198,7 @@ export const dbOperations = {
     return data.map(enrollment => ({
       ...enrollment.course_configuration,
       syllabus: enrollment.syllabus?.syllabus?.[0],
+      generation_job: enrollment.generation_jobs?.syllabus_generation_jobs?.[0],
       user_enrollment: {
         id: enrollment.id,
         user_id: enrollment.user_id,
@@ -257,37 +275,123 @@ export const dbOperations = {
     return data
   },
 
-  // Create initial syllabus record (will be populated by edge function)
-  async createSyllabus(courseConfigurationId: string): Promise<Syllabus> {
+  // Get syllabus generation job status
+  async getSyllabusGenerationJob(courseConfigurationId: string): Promise<SyllabusGenerationJob | null> {
     const { data, error } = await supabase
-      .from('syllabus')
-      .insert({
-        course_configuration_id: courseConfigurationId,
-        status: 'pending'
-      })
-      .select()
+      .from('syllabus_generation_jobs')
+      .select('*')
+      .eq('course_configuration_id', courseConfigurationId)
       .single()
 
-    if (error) {
-      throw new Error(`Failed to create syllabus: ${error.message}`)
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+      throw new Error(`Failed to fetch generation job: ${error.message}`)
     }
 
     return data
   },
 
-  // Call edge function to generate syllabus
-  async generateSyllabus(courseConfiguration: CourseConfiguration): Promise<void> {
-    const { error } = await supabase.functions.invoke('generate-syllabus', {
-      body: {
-        table: 'course_configuration',
-        type: 'INSERT',
-        record: courseConfiguration
-      }
-    })
+  // Create initial syllabus record and enqueue generation job
+  async createSyllabus(courseConfigurationId: string): Promise<{ syllabus: Syllabus; job: SyllabusGenerationJob }> {
+    // Start a transaction-like operation
+    try {
+      // First, create the initial syllabus record
+      const { data: syllabusData, error: syllabusError } = await supabase
+        .from('syllabus')
+        .insert({
+          course_configuration_id: courseConfigurationId,
+          status: 'pending'
+        })
+        .select()
+        .single()
 
-    if (error) {
-      const errorMessage = error.message || 'Network error occurred while calling the edge function. Please check your connection and try again.'
-      throw new Error(`Failed to generate syllabus: ${errorMessage}`)
+      if (syllabusError) {
+        throw new Error(`Failed to create syllabus: ${syllabusError.message}`)
+      }
+
+      // Then, enqueue the generation job
+      const { data: jobData, error: jobError } = await supabase
+        .from('syllabus_generation_jobs')
+        .insert({
+          course_configuration_id: courseConfigurationId,
+          status: 'pending'
+        })
+        .select()
+        .single()
+
+      if (jobError) {
+        // If job creation fails, we should clean up the syllabus record
+        await supabase
+          .from('syllabus')
+          .delete()
+          .eq('id', syllabusData.id)
+        
+        throw new Error(`Failed to enqueue generation job: ${jobError.message}`)
+      }
+
+      // Update syllabus status to 'generating' since job is now queued
+      const { data: updatedSyllabus, error: updateError } = await supabase
+        .from('syllabus')
+        .update({ status: 'generating' })
+        .eq('id', syllabusData.id)
+        .select()
+        .single()
+
+      if (updateError) {
+        console.warn('Failed to update syllabus status to generating:', updateError)
+      }
+
+      return {
+        syllabus: updatedSyllabus || syllabusData,
+        job: jobData
+      }
+
+    } catch (error) {
+      console.error('Error in createSyllabus:', error)
+      throw error
     }
+  },
+
+  // Retry failed syllabus generation
+  async retrySyllabusGeneration(courseConfigurationId: string): Promise<SyllabusGenerationJob> {
+    // Get the existing job
+    const { data: existingJob, error: fetchError } = await supabase
+      .from('syllabus_generation_jobs')
+      .select('*')
+      .eq('course_configuration_id', courseConfigurationId)
+      .single()
+
+    if (fetchError) {
+      throw new Error(`Failed to fetch existing job: ${fetchError.message}`)
+    }
+
+    // Check if we can retry
+    if (existingJob.retries >= existingJob.max_retries) {
+      throw new Error(`Maximum retries (${existingJob.max_retries}) exceeded for this job`)
+    }
+
+    // Reset job to pending status for retry
+    const { data: retriedJob, error: retryError } = await supabase
+      .from('syllabus_generation_jobs')
+      .update({
+        status: 'pending',
+        error_message: null,
+        started_at: null,
+        completed_at: null
+      })
+      .eq('id', existingJob.id)
+      .select()
+      .single()
+
+    if (retryError) {
+      throw new Error(`Failed to retry generation job: ${retryError.message}`)
+    }
+
+    // Also update syllabus status
+    await supabase
+      .from('syllabus')
+      .update({ status: 'generating' })
+      .eq('course_configuration_id', courseConfigurationId)
+
+    return retriedJob
   }
 }
