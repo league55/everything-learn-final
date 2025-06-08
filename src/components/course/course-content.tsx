@@ -1,11 +1,9 @@
-import { useState } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -24,9 +22,7 @@ import {
   Info,
   ExternalLink,
   Quote,
-  ArrowLeft,
-  ChevronDown,
-  ChevronUp
+  ArrowLeft
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import 'highlight.js/styles/github-dark.css'
@@ -60,7 +56,6 @@ export function CourseContent({
   onMarkComplete,
   onNavigate
 }: CourseContentProps) {
-  const [isTopicOverviewOpen, setIsTopicOverviewOpen] = useState(false)
   const canGoBack = moduleIndex > 0 || topicIndex > 0
   const canGoForward = moduleIndex < totalModules - 1 || topicIndex < module.topics.length - 1
   const isLastTopic = moduleIndex === totalModules - 1 && topicIndex === module.topics.length - 1
@@ -124,7 +119,6 @@ export function CourseContent({
   }
 
   const parsedFullContent = parseFullContent(fullContent)
-  const hasComprehensiveContent = parsedFullContent !== null
 
   return (
     <div className="flex flex-col h-full">
@@ -238,6 +232,60 @@ export function CourseContent({
             )}
 
             {/* Topic Overview */}
+            <div className="mb-6 md:mb-8">
+              <div className="flex items-center gap-2 mb-3 md:mb-4">
+                <Info className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+                <h2 className="text-lg md:text-xl font-semibold">Topic Overview</h2>
+              </div>
+              <div className="prose prose-neutral dark:prose-invert max-w-none prose-sm md:prose-base">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeHighlight]}
+                  components={{
+                    h1: ({ children }) => (
+                      <h1 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 mt-4 md:mt-6 first:mt-0">{children}</h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-lg md:text-xl font-semibold mb-2 md:mb-3 mt-4 md:mt-6 first:mt-0">{children}</h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-base md:text-lg font-semibold mb-2 mt-3 md:mt-4 first:mt-0">{children}</h3>
+                    ),
+                    p: ({ children }) => (
+                      <p className="text-sm md:text-base leading-6 md:leading-7 mb-3 md:mb-4">{children}</p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="list-disc list-inside mb-3 md:mb-4 space-y-1 text-sm md:text-base">{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="list-decimal list-inside mb-3 md:mb-4 space-y-1 text-sm md:text-base">{children}</ol>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 border-primary pl-3 md:pl-4 italic my-3 md:my-4 text-muted-foreground text-sm md:text-base">
+                        {children}
+                      </blockquote>
+                    ),
+                    code: ({ children, className }) => {
+                      const isInline = !className
+                      return isInline ? (
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs md:text-sm font-mono">
+                          {children}
+                        </code>
+                      ) : (
+                        <code className={className}>{children}</code>
+                      )
+                    },
+                    pre: ({ children }) => (
+                      <pre className="bg-muted p-3 md:p-4 rounded-lg overflow-x-auto mb-3 md:mb-4 text-xs md:text-sm">
+                        {children}
+                      </pre>
+                    ),
+                  }}
+                >
+                  {topic.content}
+                </ReactMarkdown>
+              </div>
+            </div>
 
             <Separator className="my-6 md:my-8" />
 
