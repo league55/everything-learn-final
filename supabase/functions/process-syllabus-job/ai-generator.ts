@@ -60,8 +60,8 @@ export class AIGenerator {
       1: { modules: 3, topicsPerModule: 3 },
       2: { modules: 3, topicsPerModule: 4 },
       3: { modules: 4, topicsPerModule: 5 },
-      4: { modules: 4, topicsPerModule: 6 },
-      5: { modules: 5, topicsPerModule: 8 }
+      4: { modules: 4, topicsPerModule: 5 }, // Reduced from 6 to 5
+      5: { modules: 4, topicsPerModule: 5 }  // Reduced from 8 to 5, and modules from 5 to 4
     }
 
     return structures[depth as keyof typeof structures] || structures[3]
