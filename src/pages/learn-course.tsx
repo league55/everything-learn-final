@@ -27,8 +27,12 @@ export function LearnCoursePage() {
   const [selectedTopicIndex, setSelectedTopicIndex] = useState(0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
+  // UI state managed by parent component
+  const [showFinalTestButton, setShowFinalTestButton] = useState(false)
+  const [courseReadyForCompletion, setCourseReadyForCompletion] = useState(false)
+
   // Load course data
-  const { courseData, loading, error } = useCourseData(courseId)
+  const { courseData, setCourseData, loading, error } = useCourseData(courseId)
 
   // Set initial position based on enrollment progress
   useEffect(() => {
@@ -49,38 +53,35 @@ export function LearnCoursePage() {
 
   // Manage course progress
   const {
-    courseReadyForCompletion,
     handleTopicSelect,
-    handleMarkComplete,
-    updateCourseData
+    handleMarkComplete
   } = useCourseProgress(
     courseData,
-    (updater) => updateCourseData(updater),
+    setCourseData,
     selectedModuleIndex,
     selectedTopicIndex,
     setSelectedModuleIndex,
     setSelectedTopicIndex,
-    (show) => {} // Will be set by CVI session manager
+    setShowFinalTestButton,
+    setCourseReadyForCompletion
   )
 
   // Manage CVI sessions
   const {
-    showFinalTestButton,
     showCviModal,
     tavusConversationId,
     tavusConversationUrl,
     cviConversationType,
     isInitiatingCvi,
-    setShowFinalTestButton,
     handleInitiateTest,
     handleCviComplete,
     handleCloseCvi
-  } = useCviSession(courseData, selectedModuleIndex, (ready) => {})
-
-  // Update the course progress manager with the setShowFinalTestButton function
-  useEffect(() => {
-    // This ensures the course progress manager can control the final test button
-  }, [setShowFinalTestButton])
+  } = useCviSession(
+    courseData,
+    selectedModuleIndex,
+    setShowFinalTestButton,
+    setCourseReadyForCompletion
+  )
 
   if (loading) {
     return (

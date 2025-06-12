@@ -11,6 +11,7 @@ export interface CourseData {
 
 interface UseCourseDataResult {
   courseData: CourseData | null
+  setCourseData: React.Dispatch<React.SetStateAction<CourseData | null>>
   loading: boolean
   error: string | null
 }
@@ -68,5 +69,5 @@ export function useCourseData(courseId: string | undefined): UseCourseDataResult
     loadCourseData()
   }, [courseId, user])
 
-  return { courseData, loading, error }
+  return { courseData, setCourseData, loading, error }
 }

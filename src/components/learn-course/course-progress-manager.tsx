@@ -1,13 +1,10 @@
-import { useState } from 'react'
 import { dbOperations } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import type { CourseData } from './course-data-loader'
 
 interface UseCourseProgressResult {
-  courseReadyForCompletion: boolean
   handleTopicSelect: (moduleIndex: number, topicIndex: number) => Promise<void>
   handleMarkComplete: () => Promise<void>
-  updateCourseData: (updater: (prev: CourseData | null) => CourseData | null) => void
 }
 
 export function useCourseProgress(
@@ -17,9 +14,9 @@ export function useCourseProgress(
   selectedTopicIndex: number,
   setSelectedModuleIndex: (index: number) => void,
   setSelectedTopicIndex: (index: number) => void,
-  setShowFinalTestButton: (show: boolean) => void
+  setShowFinalTestButton: (show: boolean) => void,
+  setCourseReadyForCompletion: (ready: boolean) => void
 ): UseCourseProgressResult {
-  const [courseReadyForCompletion, setCourseReadyForCompletion] = useState(false)
   const { toast } = useToast()
 
   const handleTopicSelect = async (moduleIndex: number, topicIndex: number) => {
@@ -115,14 +112,8 @@ export function useCourseProgress(
     }
   }
 
-  const updateCourseData = (updater: (prev: CourseData | null) => CourseData | null) => {
-    setCourseData(updater)
-  }
-
   return {
-    courseReadyForCompletion,
     handleTopicSelect,
-    handleMarkComplete,
-    updateCourseData
+    handleMarkComplete
   }
 }

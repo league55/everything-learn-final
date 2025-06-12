@@ -6,13 +6,11 @@ import { useToast } from '@/hooks/use-toast'
 import type { CourseData } from './course-data-loader'
 
 interface UseCviSessionResult {
-  showFinalTestButton: boolean
   showCviModal: boolean
   tavusConversationId: string | null
   tavusConversationUrl: string | null
   cviConversationType: 'practice' | 'exam'
   isInitiatingCvi: boolean
-  setShowFinalTestButton: (show: boolean) => void
   handleInitiateTest: (conversationType: 'practice' | 'exam') => Promise<void>
   handleCviComplete: (transcript?: string) => Promise<void>
   handleCloseCvi: () => void
@@ -21,9 +19,9 @@ interface UseCviSessionResult {
 export function useCviSession(
   courseData: CourseData | null,
   selectedModuleIndex: number,
+  setShowFinalTestButton: (show: boolean) => void,
   setCourseReadyForCompletion: (ready: boolean) => void
 ): UseCviSessionResult {
-  const [showFinalTestButton, setShowFinalTestButton] = useState(false)
   const [showCviModal, setShowCviModal] = useState(false)
   const [tavusConversationId, setTavusConversationId] = useState<string | null>(null)
   const [tavusConversationUrl, setTavusConversationUrl] = useState<string | null>(null)
@@ -138,13 +136,11 @@ export function useCviSession(
   }
 
   return {
-    showFinalTestButton,
     showCviModal,
     tavusConversationId,
     tavusConversationUrl,
     cviConversationType,
     isInitiatingCvi,
-    setShowFinalTestButton,
     handleInitiateTest,
     handleCviComplete,
     handleCloseCvi
