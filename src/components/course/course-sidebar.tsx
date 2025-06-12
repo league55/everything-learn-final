@@ -3,7 +3,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import type { CourseConfiguration, Syllabus, UserEnrollment } from '@/lib/supabase'
 import { 
@@ -14,9 +13,7 @@ import {
   Circle,
   Clock,
   Target,
-  Search,
   X,
-  Menu,
   List
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -72,18 +69,6 @@ export function CourseSidebar({
 
   const isTopicAccessible = (moduleIndex: number) => {
     return moduleIndex <= enrollment.current_module_index
-  }
-
-  const filterTopics = (topics: any[], moduleIndex: number) => {
-    if (!searchQuery) return topics
-    
-    return topics.filter(topic => 
-      topic.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      topic.keywords.some((keyword: string) => 
-        keyword.toLowerCase().includes(searchQuery.toLowerCase())
-      ) ||
-      topic.content.toLowerCase().includes(searchQuery.toLowerCase())
-    )
   }
 
   const totalProgress = Math.round((enrollment.current_module_index / syllabus.modules.length) * 100)
@@ -206,19 +191,6 @@ export function CourseSidebar({
         </div>
       </div>
 
-      {/* Search */}
-      <div className="p-4 border-b border-border">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search topics..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      </div>
-
       {/* Modules List */}
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
@@ -226,11 +198,7 @@ export function CourseSidebar({
             const isExpanded = expandedModules.has(moduleIndex)
             const isAccessible = isTopicAccessible(moduleIndex)
             const progress = getModuleProgress(moduleIndex)
-            const filteredTopics = filterTopics(module.topics, moduleIndex)
             
-            // Hide module if search doesn't match any topics
-            if (searchQuery && filteredTopics.length === 0) return null
-
             return (
               <Collapsible
                 key={moduleIndex}
@@ -281,15 +249,14 @@ export function CourseSidebar({
                 </CollapsibleTrigger>
 
                 <CollapsibleContent className="ml-6 space-y-1">
-                  {filteredTopics.map((topic, topicIndex) => {
-                    const actualTopicIndex = module.topics.findIndex(t => t === topic)
-                    const isSelected = selectedModuleIndex === moduleIndex && selectedTopicIndex === actualTopicIndex
+                  {module.topics.map((topic, topicIndex) => {
+                    const isSelected = selectedModuleIndex === moduleIndex && selectedTopicIndex === topicIndex
                     const isTopicCompleted = moduleIndex < enrollment.current_module_index || 
-                      (moduleIndex === enrollment.current_module_index && actualTopicIndex < selectedTopicIndex)
+                      (moduleIndex === enrollment.current_module_index && topicIndex < selectedTopicIndex)
 
                     return (
                       <Button
-                        key={actualTopicIndex}
+                        key={topicIndex}
                         variant="ghost"
                         size="sm"
                         className={cn(
@@ -297,7 +264,7 @@ export function CourseSidebar({
                           isSelected && "bg-primary text-primary-foreground",
                           !isAccessible && "opacity-50"
                         )}
-                        onClick={() => handleTopicSelect(moduleIndex, actualTopicIndex)}
+                        onClick={() => handleTopicSelect(moduleIndex, topicIndex)}
                         disabled={!isAccessible}
                       >
                         <div className="flex items-start gap-2 flex-1 min-w-0">
