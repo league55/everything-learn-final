@@ -34,28 +34,30 @@ export function CviInterfaceModal({
   const [transcript, setTranscript] = useState<string>('')
 
   const handleConversationEnd = (conversationTranscript?: string) => {
-    console.log('Conversation ended with transcript:', conversationTranscript)
+    console.log('CVI Modal: Conversation ended with transcript:', conversationTranscript?.substring(0, 100))
     setTranscript(conversationTranscript || '')
     setSessionEnded(true)
     
-    // Auto-complete after 3 seconds
-    setTimeout(() => {
-      if (onComplete) {
-        onComplete(conversationTranscript)
-      }
-    }, 3000)
+    // Don't auto-complete immediately, let user see the completion screen
+    // They can manually click to complete
   }
 
   const handleError = (error: string) => {
-    console.error('CVI Error:', error)
+    console.error('CVI Modal Error:', error)
     setErrorMessage(error)
     setHasError(true)
   }
 
   const handleManualComplete = () => {
+    console.log('User manually completing session')
     if (onComplete) {
       onComplete(transcript)
     }
+  }
+
+  const handleCloseWithoutComplete = () => {
+    console.log('User closing modal without completing')
+    onClose()
   }
 
   const isExam = conversationType === 'exam'
@@ -79,7 +81,7 @@ export function CviInterfaceModal({
               Please check your internet connection and ensure you've granted camera and microphone permissions.
             </p>
             <div className="flex gap-3">
-              <Button onClick={onClose} variant="outline" className="flex-1">
+              <Button onClick={handleCloseWithoutComplete} variant="outline" className="flex-1">
                 Close
               </Button>
               <Button 
@@ -107,7 +109,7 @@ export function CviInterfaceModal({
             </div>
             <CardTitle className="text-2xl">Session Complete!</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 text-center">
+          <CardContent className="space-y-6 text-center">
             <p className="text-muted-foreground">
               {isExam 
                 ? 'Your oral examination has been completed successfully. Your responses have been recorded and will be reviewed.'
@@ -124,9 +126,14 @@ export function CviInterfaceModal({
               </div>
             )}
             
-            <Button onClick={handleManualComplete} className="w-full">
-              Continue to Course
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={handleCloseWithoutComplete} variant="outline" className="flex-1">
+                Close Session
+              </Button>
+              <Button onClick={handleManualComplete} className="flex-1">
+                Complete & Continue
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -141,7 +148,7 @@ export function CviInterfaceModal({
         <Button
           variant="ghost"
           size="sm"
-          onClick={onClose}
+          onClick={handleCloseWithoutComplete}
           className="h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white"
         >
           <X className="h-5 w-5" />

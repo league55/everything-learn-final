@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import DailyIframe from '@daily-co/daily-js'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -12,7 +12,8 @@ import {
   PhoneOff,
   Volume2,
   VolumeX,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -51,81 +52,141 @@ export function TavusConversation({
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
   const [callState, setCallState] = useState<string>('new')
+  const [connectionError, setConnectionError] = useState<string | null>(null)
+  const hasJoinedRef = useRef(false)
+  const hasLeftRef = useRef(false)
+
+  // Stable callback using useCallback
+  const handleConversationEnd = useCallback((transcript?: string) => {
+    console.log('Conversation ended, calling onConversationEnd')
+    if (!hasLeftRef.current) {
+      hasLeftRef.current = true
+      onConversationEnd(transcript)
+    }
+  }, [onConversationEnd])
+
+  const handleError = useCallback((error: string) => {
+    console.error('Conversation error:', error)
+    setConnectionError(error)
+    onError(error)
+  }, [onError])
 
   useEffect(() => {
+    let call: any = null
+    let joinTimeout: NodeJS.Timeout
+
     const initializeCall = async () => {
       try {
+        console.log('Initializing Tavus conversation with URL:', conversationUrl)
+        
         // Get or create call object
-        const call = getOrCreateCallObject()
+        call = getOrCreateCallObject()
         callRef.current = call
 
-        console.log('Joining Tavus conversation:', conversationUrl)
+        // Clear any existing state
+        setConnectionError(null)
+        setIsConnecting(true)
+        setIsConnected(false)
 
         // Set up event listeners
-        call.on('joined-meeting', () => {
+        const handleJoinedMeeting = () => {
           console.log('Successfully joined meeting')
           setIsConnecting(false)
           setIsConnected(true)
           setCallState('joined')
-        })
+          hasJoinedRef.current = true
+          if (joinTimeout) clearTimeout(joinTimeout)
+        }
 
-        call.on('left-meeting', () => {
+        const handleLeftMeeting = () => {
           console.log('Left meeting')
           setIsConnected(false)
           setCallState('left')
-          onConversationEnd()
-        })
+          if (hasJoinedRef.current) {
+            // Only call conversation end if we actually joined
+            handleConversationEnd()
+          }
+        }
 
-        call.on('error', (error: any) => {
+        const handleCallError = (error: any) => {
           console.error('Daily call error:', error)
           setIsConnecting(false)
-          onError(`Call error: ${error.message || 'Unknown error'}`)
-        })
+          if (joinTimeout) clearTimeout(joinTimeout)
+          handleError(`Call error: ${error.message || 'Failed to connect to video call'}`)
+        }
 
+        const updateParticipants = () => {
+          if (!call) return
+
+          const participants = call.participants()
+          const remotes: Record<string, any> = {}
+          let local = null
+
+          Object.entries(participants).forEach(([id, p]: [string, any]) => {
+            if (id === 'local') {
+              local = p
+            } else {
+              remotes[id] = p
+            }
+          })
+
+          setRemoteParticipants(remotes)
+          setLocalParticipant(local)
+        }
+
+        // Add event listeners
+        call.on('joined-meeting', handleJoinedMeeting)
+        call.on('left-meeting', handleLeftMeeting)
+        call.on('error', handleCallError)
         call.on('participant-joined', updateParticipants)
         call.on('participant-updated', updateParticipants)
         call.on('participant-left', updateParticipants)
 
+        // Set a timeout for connection
+        joinTimeout = setTimeout(() => {
+          if (!hasJoinedRef.current) {
+            console.error('Connection timeout - failed to join within 30 seconds')
+            handleError('Connection timeout. Please check your internet connection and try again.')
+          }
+        }, 30000) // 30 second timeout
+
+        console.log('Attempting to join Daily.co call...')
+        
         // Join the meeting
-        await call.join({ url: conversationUrl })
+        await call.join({ 
+          url: conversationUrl,
+          // Enable audio and video by default
+          startAudioOff: false,
+          startVideoOff: false
+        })
+
+        console.log('Join request sent successfully')
 
       } catch (error) {
         console.error('Failed to initialize call:', error)
         setIsConnecting(false)
-        onError(`Failed to join conversation: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        if (joinTimeout) clearTimeout(joinTimeout)
+        handleError(`Failed to join conversation: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
-    }
-
-    const updateParticipants = () => {
-      const call = callRef.current
-      if (!call) return
-
-      const participants = call.participants()
-      const remotes: Record<string, any> = {}
-      let local = null
-
-      Object.entries(participants).forEach(([id, p]: [string, any]) => {
-        if (id === 'local') {
-          local = p
-        } else {
-          remotes[id] = p
-        }
-      })
-
-      setRemoteParticipants(remotes)
-      setLocalParticipant(local)
     }
 
     initializeCall()
 
-    // Cleanup
+    // Cleanup function
     return () => {
-      const call = callRef.current
-      if (call && callState !== 'left') {
-        call.leave()
+      console.log('Cleaning up Tavus conversation component')
+      if (joinTimeout) clearTimeout(joinTimeout)
+      
+      if (call && !hasLeftRef.current) {
+        console.log('Leaving call during cleanup')
+        try {
+          call.leave()
+        } catch (error) {
+          console.error('Error leaving call during cleanup:', error)
+        }
       }
     }
-  }, [conversationUrl, onConversationEnd, onError])
+  }, [conversationUrl]) // Only depend on conversationUrl
 
   // Attach remote video and audio tracks
   useEffect(() => {
@@ -164,20 +225,44 @@ export function TavusConversation({
 
   const leaveCall = () => {
     const call = callRef.current
-    if (!call) return
+    if (!call || hasLeftRef.current) return
 
+    console.log('User manually leaving call')
+    hasLeftRef.current = true
     call.leave()
   }
 
+  // Show error state
+  if (connectionError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="p-8 text-center max-w-md">
+          <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
+          <h3 className="text-lg font-semibold mb-2">Connection Failed</h3>
+          <p className="text-muted-foreground mb-4 text-sm">
+            {connectionError}
+          </p>
+          <Button onClick={() => window.location.reload()} className="w-full">
+            Try Again
+          </Button>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show connecting state
   if (isConnecting) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="p-8 text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <h3 className="text-lg font-semibold mb-2">Connecting to your expert...</h3>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             Please allow camera and microphone access when prompted
           </p>
+          <div className="text-xs text-muted-foreground">
+            This may take up to 30 seconds
+          </div>
         </Card>
       </div>
     )
@@ -275,6 +360,15 @@ export function TavusConversation({
               </div>
             </Card>
           )}
+
+          {/* Show message if no participants yet */}
+          {!isConnected && Object.keys(remoteParticipants).length === 0 && (
+            <Card className="col-span-full bg-gray-800 border-gray-700 p-8 text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+              <h3 className="text-lg font-semibold mb-2">Waiting for expert to join...</h3>
+              <p className="text-gray-400">Your AI expert will appear here shortly</p>
+            </Card>
+          )}
         </div>
       </main>
 
@@ -286,6 +380,7 @@ export function TavusConversation({
             variant={isMuted ? "destructive" : "secondary"}
             size="lg"
             className="rounded-full h-12 w-12"
+            disabled={!isConnected}
           >
             {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
           </Button>
@@ -295,6 +390,7 @@ export function TavusConversation({
             variant={isVideoOff ? "destructive" : "secondary"}
             size="lg"
             className="rounded-full h-12 w-12"
+            disabled={!isConnected}
           >
             {isVideoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
           </Button>
