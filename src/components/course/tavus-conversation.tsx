@@ -24,20 +24,6 @@ interface TavusConversationProps {
   onError: (error: string) => void
 }
 
-// Use a property on window to store the singleton
-declare global {
-  interface Window {
-    _dailyCallObject?: any
-  }
-}
-
-const getOrCreateCallObject = () => {
-  if (!window._dailyCallObject) {
-    window._dailyCallObject = DailyIframe.createCallObject()
-  }
-  return window._dailyCallObject
-}
-
 export function TavusConversation({
   conversationUrl,
   conversationType,
@@ -79,8 +65,8 @@ export function TavusConversation({
       try {
         console.log('Initializing Tavus conversation with URL:', conversationUrl)
         
-        // Get or create call object
-        call = getOrCreateCallObject()
+        // Create a new call object for this conversation
+        call = DailyIframe.createCallObject()
         callRef.current = call
 
         // Clear any existing state
@@ -178,11 +164,11 @@ export function TavusConversation({
       if (joinTimeout) clearTimeout(joinTimeout)
       
       if (call && !hasLeftRef.current) {
-        console.log('Leaving call during cleanup')
+        console.log('Destroying call during cleanup')
         try {
-          call.leave()
+          call.destroy()
         } catch (error) {
-          console.error('Error leaving call during cleanup:', error)
+          console.error('Error destroying call during cleanup:', error)
         }
       }
     }
