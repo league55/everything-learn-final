@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@^2.39.1'
 import { z } from 'npm:zod@^3.23.8'
 import type { TavusCviRequest, TavusCviResponse, TavusApiResponse, VideoConversation } from './types.ts'
-import { getReplicaId, generatePersonalizedScript } from './replica-mapping.ts'
+import { getReplicaId, getPersonaId, generatePersonalizedScript, generateCustomGreeting } from './replica-mapping.ts'
 
 // Request validation schema
 const TavusCviRequestSchema = z.object({
@@ -59,49 +59,61 @@ Deno.serve(async (req: Request) => {
     // Determine conversation type based on course depth
     const actualConversationType = courseDepth <= 3 ? 'practice' : 'exam'
     
-    // Get appropriate replica ID
+    // Get appropriate replica and persona IDs
     const replicaId = getReplicaId(actualConversationType, courseTopic)
+    const personaId = getPersonaId(actualConversationType, courseTopic)
     
-    // Generate personalized script
-    const personalizedScript = generatePersonalizedScript(
+    // Generate personalized content
+    const conversationalContext = generatePersonalizedScript(
       userName,
       courseTopic,
       moduleSummary,
       actualConversationType
     )
+    
+    const customGreeting = generateCustomGreeting(
+      userName,
+      courseTopic,
+      actualConversationType
+    )
 
     console.log('Initiating Tavus CVI with:', {
       replicaId,
+      personaId,
       conversationType: actualConversationType,
-      scriptLength: personalizedScript.length
+      contextLength: conversationalContext.length
     })
 
-    // Call Tavus API to create conversation
-    const tavusResponse = await fetch('https://api.tavus.io/v2/conversations', {
+    // Call Tavus API to create conversation using correct endpoint and headers
+    const tavusResponse = await fetch('https://tavusapi.com/v2/conversations', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${tavusApiKey}`,
+        'x-api-key': tavusApiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         replica_id: replicaId,
-        conversation_name: `${actualConversationType}_${courseTopic}_${Date.now()}`,
-        conversational_context: personalizedScript,
-        callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/tavus-cvi-webhook`,
+        persona_id: personaId,
+        conversation_name: `${actualConversationType}_${courseTopic}_${userName}_${Date.now()}`,
+        conversational_context: conversationalContext,
+        custom_greeting: customGreeting,
         properties: {
           max_call_duration: actualConversationType === 'exam' ? 1800 : 900, // 30 min for exam, 15 min for practice
-          participant_left_timeout: 300, // 5 minutes
-          participant_absent_timeout: 120, // 2 minutes
-          enable_recording: true,
-          enable_transcription: true
+          participant_left_timeout: 60,
+          participant_absent_timeout: 300,
+          language: "english"
         }
       }),
     })
 
     if (!tavusResponse.ok) {
-      const errorData = await tavusResponse.json()
-      console.error('Tavus API error:', errorData)
-      throw new Error(`Tavus API error: ${errorData.message || 'Unknown error'}`)
+      const errorData = await tavusResponse.text()
+      console.error('Tavus API error:', {
+        status: tavusResponse.status,
+        statusText: tavusResponse.statusText,
+        body: errorData
+      })
+      throw new Error(`Tavus API error (${tavusResponse.status}): ${errorData}`)
     }
 
     const tavusData: TavusApiResponse = await tavusResponse.json()
@@ -119,7 +131,9 @@ Deno.serve(async (req: Request) => {
         status: 'initiated',
         session_log: {
           created_at: new Date().toISOString(),
-          initial_script: personalizedScript,
+          conversation_url: tavusData.conversation_url,
+          initial_script: conversationalContext,
+          custom_greeting: customGreeting,
           tavus_response: tavusData
         }
       })
@@ -133,9 +147,10 @@ Deno.serve(async (req: Request) => {
 
     console.log('Conversation record stored:', conversationRecord.id)
 
-    // Return response to frontend
+    // Return response to frontend including conversation_url
     const response: TavusCviResponse = {
       conversation_id: tavusData.conversation_id,
+      conversation_url: tavusData.conversation_url,
       replica_id: replicaId,
       status: 'initiated'
     }

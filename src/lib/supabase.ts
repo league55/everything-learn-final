@@ -203,7 +203,7 @@ export const dbOperations = {
       .from('user_enrollments')
       .select('course_configuration_id')
       .in('course_configuration_id', courseIds)
-      .eq('status', 'active')
+      .in('status', ['active', 'completed'])
 
     if (countError) {
       console.warn('Failed to fetch enrollment counts:', countError)
@@ -214,7 +214,7 @@ export const dbOperations = {
       .from('user_enrollments')
       .select('*')
       .in('course_configuration_id', courseIds)
-      .eq('status', 'active')
+      .in('status', ['active', 'completed'])
       .order('enrolled_at', { ascending: false })
 
     if (enrollmentError) {
@@ -641,7 +641,7 @@ export const dbOperations = {
     conversationType: 'practice' | 'exam',
     courseTopic: string,
     moduleSummary: string
-  ): Promise<{ conversation_id: string; replica_id: string; status: string }> {
+  ): Promise<{ conversation_id: string; conversation_url: string; replica_id: string; status: string }> {
     const { data, error } = await supabase.functions.invoke('tavus-cvi-initiate', {
       body: {
         courseId,

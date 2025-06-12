@@ -68,7 +68,7 @@ export function LearnCoursePage() {
     showFinalTestButton,
     showCviModal,
     tavusConversationId,
-    tavusReplicaId,
+    tavusConversationUrl,
     cviConversationType,
     isInitiatingCvi,
     setShowFinalTestButton,
@@ -169,10 +169,10 @@ export function LearnCoursePage() {
       )}
 
       {/* CVI Interface Modal */}
-      {showCviModal && tavusConversationId && tavusReplicaId && (
+      {showCviModal && tavusConversationId && tavusConversationUrl && (
         <CviInterfaceModal
           tavusConversationId={tavusConversationId}
-          tavusReplicaId={tavusReplicaId}
+          tavusConversationUrl={tavusConversationUrl}
           conversationType={cviConversationType}
           onClose={handleCloseCvi}
           onComplete={handleCviComplete}

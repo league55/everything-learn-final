@@ -10,15 +10,19 @@ export interface TavusCviRequest {
 
 export interface TavusCviResponse {
   conversation_id: string
+  conversation_url: string
   replica_id: string
   status: string
 }
 
 export interface TavusApiResponse {
   conversation_id: string
+  conversation_name: string
   status: string
+  conversation_url: string
   replica_id: string
-  conversation_url?: string
+  persona_id: string
+  created_at: string
 }
 
 export interface VideoConversation {

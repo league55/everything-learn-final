@@ -9,12 +9,12 @@ interface UseCviSessionResult {
   showFinalTestButton: boolean
   showCviModal: boolean
   tavusConversationId: string | null
-  tavusReplicaId: string | null
+  tavusConversationUrl: string | null
   cviConversationType: 'practice' | 'exam'
   isInitiatingCvi: boolean
   setShowFinalTestButton: (show: boolean) => void
   handleInitiateTest: (conversationType: 'practice' | 'exam') => Promise<void>
-  handleCviComplete: () => Promise<void>
+  handleCviComplete: (transcript?: string) => Promise<void>
   handleCloseCvi: () => void
 }
 
@@ -26,7 +26,7 @@ export function useCviSession(
   const [showFinalTestButton, setShowFinalTestButton] = useState(false)
   const [showCviModal, setShowCviModal] = useState(false)
   const [tavusConversationId, setTavusConversationId] = useState<string | null>(null)
-  const [tavusReplicaId, setTavusReplicaId] = useState<string | null>(null)
+  const [tavusConversationUrl, setTavusConversationUrl] = useState<string | null>(null)
   const [cviConversationType, setCviConversationType] = useState<'practice' | 'exam'>('practice')
   const [isInitiatingCvi, setIsInitiatingCvi] = useState(false)
 
@@ -44,6 +44,16 @@ export function useCviSession(
       const userName = user.email?.split('@')[0] || user.user_metadata?.name || 'Student'
       const currentModule = courseData.syllabus.modules[selectedModuleIndex]
       
+      console.log('Initiating Tavus CVI session...', {
+        courseId: courseData.configuration.id,
+        userId: user.id,
+        userName,
+        courseDepth: courseData.configuration.depth,
+        conversationType,
+        courseTopic: courseData.configuration.topic,
+        moduleSummary: currentModule.summary
+      })
+
       const response = await dbOperations.initiateTavusCviSession(
         courseData.configuration.id,
         user.id,
@@ -54,8 +64,10 @@ export function useCviSession(
         currentModule.summary
       )
 
+      console.log('CVI session initiated successfully:', response)
+
       setTavusConversationId(response.conversation_id)
-      setTavusReplicaId(response.replica_id)
+      setTavusConversationUrl(response.conversation_url)
       setShowFinalTestButton(false)
       setShowCviModal(true)
 
@@ -78,11 +90,13 @@ export function useCviSession(
     }
   }
 
-  const handleCviComplete = async () => {
+  const handleCviComplete = async (transcript?: string) => {
     if (!courseData) return
 
     try {
-      // Now actually mark the course as completed in the database
+      console.log('Completing course with transcript:', transcript?.substring(0, 100))
+
+      // Mark the course as completed in the database
       await dbOperations.updateCourseProgress(
         courseData.enrollment.id,
         selectedModuleIndex,
@@ -91,7 +105,7 @@ export function useCviSession(
 
       setShowCviModal(false)
       setTavusConversationId(null)
-      setTavusReplicaId(null)
+      setTavusConversationUrl(null)
       setCourseReadyForCompletion(false)
       
       toast({
@@ -119,7 +133,7 @@ export function useCviSession(
   const handleCloseCvi = () => {
     setShowCviModal(false)
     setTavusConversationId(null)
-    setTavusReplicaId(null)
+    setTavusConversationUrl(null)
     setShowFinalTestButton(true) // Allow them to try again
   }
 
@@ -127,7 +141,7 @@ export function useCviSession(
     showFinalTestButton,
     showCviModal,
     tavusConversationId,
-    tavusReplicaId,
+    tavusConversationUrl,
     cviConversationType,
     isInitiatingCvi,
     setShowFinalTestButton,
