@@ -57,68 +57,72 @@ export function TavusConversation({
     onError(error)
   }, [onError])
 
+  // Wrap event handlers in useCallback for stability
+  const handleJoinedMeeting = useCallback(() => {
+    console.log('Successfully joined meeting')
+    setIsConnecting(false)
+    setIsConnected(true)
+    setCallState('joined')
+    hasJoinedRef.current = true
+  }, [])
+
+  const handleLeftMeeting = useCallback(() => {
+    console.log('Left meeting')
+    setIsConnected(false)
+    setCallState('left')
+    if (hasJoinedRef.current) {
+      // Only call conversation end if we actually joined
+      handleConversationEnd()
+    }
+  }, [handleConversationEnd])
+
+  const handleCallError = useCallback((error: any) => {
+    console.error('Daily call error:', error)
+    setIsConnecting(false)
+    handleError(`Call error: ${error.message || 'Failed to connect to video call'}`)
+  }, [handleError])
+
+  const updateParticipants = useCallback(() => {
+    const call = callRef.current
+    if (!call) return
+
+    const participants = call.participants()
+    const remotes: Record<string, any> = {}
+    let local = null
+
+    Object.entries(participants).forEach(([id, p]: [string, any]) => {
+      if (id === 'local') {
+        local = p
+      } else {
+        remotes[id] = p
+      }
+    })
+
+    setRemoteParticipants(remotes)
+    setLocalParticipant(local)
+  }, [])
+
   useEffect(() => {
-    let call: any = null
     let joinTimeout: NodeJS.Timeout
 
     const initializeCall = async () => {
       try {
         console.log('Initializing Tavus conversation with URL:', conversationUrl)
         
+        // Prevent duplicate call object creation
+        if (callRef.current) {
+          console.log('Call object already exists, skipping initialization')
+          return
+        }
+
         // Create a new call object for this conversation
-        call = DailyIframe.createCallObject()
+        const call = DailyIframe.createCallObject()
         callRef.current = call
 
         // Clear any existing state
         setConnectionError(null)
         setIsConnecting(true)
         setIsConnected(false)
-
-        // Set up event listeners
-        const handleJoinedMeeting = () => {
-          console.log('Successfully joined meeting')
-          setIsConnecting(false)
-          setIsConnected(true)
-          setCallState('joined')
-          hasJoinedRef.current = true
-          if (joinTimeout) clearTimeout(joinTimeout)
-        }
-
-        const handleLeftMeeting = () => {
-          console.log('Left meeting')
-          setIsConnected(false)
-          setCallState('left')
-          if (hasJoinedRef.current) {
-            // Only call conversation end if we actually joined
-            handleConversationEnd()
-          }
-        }
-
-        const handleCallError = (error: any) => {
-          console.error('Daily call error:', error)
-          setIsConnecting(false)
-          if (joinTimeout) clearTimeout(joinTimeout)
-          handleError(`Call error: ${error.message || 'Failed to connect to video call'}`)
-        }
-
-        const updateParticipants = () => {
-          if (!call) return
-
-          const participants = call.participants()
-          const remotes: Record<string, any> = {}
-          let local = null
-
-          Object.entries(participants).forEach(([id, p]: [string, any]) => {
-            if (id === 'local') {
-              local = p
-            } else {
-              remotes[id] = p
-            }
-          })
-
-          setRemoteParticipants(remotes)
-          setLocalParticipant(local)
-        }
 
         // Add event listeners
         call.on('joined-meeting', handleJoinedMeeting)
@@ -163,16 +167,29 @@ export function TavusConversation({
       console.log('Cleaning up Tavus conversation component')
       if (joinTimeout) clearTimeout(joinTimeout)
       
+      const call = callRef.current
       if (call && !hasLeftRef.current) {
         console.log('Destroying call during cleanup')
         try {
+          // Remove all event listeners
+          call.off('joined-meeting', handleJoinedMeeting)
+          call.off('left-meeting', handleLeftMeeting)
+          call.off('error', handleCallError)
+          call.off('participant-joined', updateParticipants)
+          call.off('participant-updated', updateParticipants)
+          call.off('participant-left', updateParticipants)
+          
+          // Destroy the call object
           call.destroy()
         } catch (error) {
           console.error('Error destroying call during cleanup:', error)
         }
+        
+        // Clear the ref to allow new instance creation
+        callRef.current = null
       }
     }
-  }, [conversationUrl]) // Only depend on conversationUrl
+  }, [conversationUrl, handleJoinedMeeting, handleLeftMeeting, handleCallError, updateParticipants, handleError])
 
   // Attach remote video and audio tracks
   useEffect(() => {
