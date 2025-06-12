@@ -251,7 +251,7 @@ export const dbOperations = {
         syllabus:course_configuration!inner(syllabus(*)),
         generation_jobs:course_configuration!inner(syllabus_generation_jobs(*))
       `)
-      .eq('status', 'active')
+      .in('status', ['active', 'completed'])
       .order('enrolled_at', { ascending: false })
 
     if (error) {

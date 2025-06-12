@@ -61,7 +61,10 @@ export function LearningProgress() {
   const averageProgress = enrolledCourses.length > 0 
     ? enrolledCourses.reduce((acc, course) => {
         if (!course.syllabus?.modules || course.syllabus.modules.length === 0) return acc
-        const progress = (course.user_enrollment?.current_module_index || 0) / course.syllabus.modules.length
+        // If course is completed, count as 100% progress
+        const progress = course.user_enrollment?.status === 'completed' 
+          ? 1 
+          : (course.user_enrollment?.current_module_index || 0) / course.syllabus.modules.length
         return acc + progress
       }, 0) / enrolledCourses.length * 100
     : 0

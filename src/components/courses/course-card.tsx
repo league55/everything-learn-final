@@ -61,11 +61,12 @@ export function CourseCard({ course, onEnrollmentChange }: CourseCardProps) {
       
       toast({
         title: "Successfully Enrolled!",
-        description: "You can now start learning this course.",
+        description: "Redirecting you to the course...",
         duration: 3000,
       })
 
-      onEnrollmentChange()
+      // Redirect to course page immediately after enrollment
+      navigate(`/courses/${course.id}/learn`)
     } catch (err) {
       console.error('Failed to enroll:', err)
       toast({

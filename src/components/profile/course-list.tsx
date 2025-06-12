@@ -68,6 +68,9 @@ export function CourseList({}: CourseListProps) {
 
   const calculateProgress = (enrollment: any, syllabus: any) => {
     if (!syllabus?.modules || syllabus.modules.length === 0) return 0
+    // If course is completed, show 100% progress
+    if (enrollment.status === 'completed') return 100
+    // Otherwise calculate based on current module
     return Math.round((enrollment.current_module_index / syllabus.modules.length) * 100)
   }
 
@@ -143,6 +146,14 @@ export function CourseList({}: CourseListProps) {
                 >
                   {getDepthLabel(course.depth)}
                 </Badge>
+                {isCompleted && (
+                  <Badge 
+                    variant="default" 
+                    className="text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                  >
+                    Completed
+                  </Badge>
+                )}
                 {course.syllabus && (
                   <Badge variant="outline" className="text-xs">
                     {course.syllabus.modules.length} modules
@@ -166,11 +177,16 @@ export function CourseList({}: CourseListProps) {
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>Enrolled {formatDate(course.user_enrollment?.enrolled_at || '')}</span>
+                  <span>
+                    {isCompleted 
+                      ? `Completed ${formatDate(course.user_enrollment?.completed_at || '')}` 
+                      : `Enrolled ${formatDate(course.user_enrollment?.enrolled_at || '')}`
+                    }
+                  </span>
                 </div>
               </div>
 
-              {course.syllabus && (
+              {course.syllabus && !isCompleted && (
                 <div className="text-sm text-muted-foreground">
                   Module {(course.user_enrollment?.current_module_index || 0) + 1} of {course.syllabus.modules.length}
                 </div>
