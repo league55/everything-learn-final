@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -7,12 +6,14 @@ import { useAuth } from '@/providers/auth-provider'
 import { dbOperations } from '@/lib/supabase'
 import type { CourseWithDetails } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { authStorage } from '@/lib/auth-storage'
 import { 
   Users, 
   User, 
   BookOpen, 
   TrendingUp,
-  Loader2
+  Loader2,
+  ExternalLink
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -24,7 +25,6 @@ interface CourseCardProps {
 export function CourseCard({ course, onEnrollmentChange }: CourseCardProps) {
   const [enrolling, setEnrolling] = useState(false)
   const { user } = useAuth()
-  const navigate = useNavigate()
   const { toast } = useToast()
 
   const getDepthLabel = (depth: number) => {
@@ -51,7 +51,7 @@ export function CourseCard({ course, onEnrollmentChange }: CourseCardProps) {
 
   const handleEnroll = async () => {
     if (!user) {
-      navigate('/login')
+      window.location.href = '/login'
       return
     }
 
@@ -79,8 +79,18 @@ export function CourseCard({ course, onEnrollmentChange }: CourseCardProps) {
     }
   }
 
-  const handleContinueLearning = () => {
-    navigate(`/courses/${course.id}/learn`)
+  const handleContinueLearning = async () => {
+    if (!user) {
+      window.location.href = '/login'
+      return
+    }
+
+    // Store authentication data for cross-domain access
+    await authStorage.storeAuthForLibrary(user)
+    
+    // Redirect to external library
+    const libraryUrl = `https://www.library.everythinglearn.online/courses/${course.id}/learn`
+    window.open(libraryUrl, '_blank')
   }
 
   const isEnrolled = course.user_enrollment !== undefined
@@ -142,7 +152,7 @@ export function CourseCard({ course, onEnrollmentChange }: CourseCardProps) {
             className="w-full"
             onClick={handleContinueLearning}
           >
-            <TrendingUp className="h-4 w-4 mr-2" />
+            <ExternalLink className="h-4 w-4 mr-2" />
             Continue Learning
           </Button>
         ) : (

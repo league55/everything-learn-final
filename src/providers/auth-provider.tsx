@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { authStorage } from '@/lib/auth-storage'
 
 interface AuthContextType {
   user: User | null
@@ -37,9 +38,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setSession(session)
         setUser(session?.user ?? null)
         
+        // Update stored auth data for library access
+        await authStorage.updateStoredAuthData(session?.user ?? null, session)
+        
         if (event === 'SIGNED_OUT') {
           setUser(null)
           setSession(null)
+          authStorage.clearStoredAuthData()
         }
         
         setLoading(false)
@@ -51,6 +56,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     setLoading(true)
+    authStorage.clearStoredAuthData()
     await supabase.auth.signOut()
     setUser(null)
     setSession(null)

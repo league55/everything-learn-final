@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { BookOpen, Target, Clock, Play, CheckCircle, TrendingUp } from 'lucide-react'
+import { BookOpen, Target, Clock, Play, CheckCircle, TrendingUp, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { dbOperations } from '@/lib/supabase'
 import type { CourseWithDetails } from '@/lib/supabase'
-import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/providers/auth-provider'
+import { authStorage } from '@/lib/auth-storage'
 
 interface CourseListProps {
   // Remove the old props since we'll fetch enrolled courses directly
@@ -17,7 +18,7 @@ export function CourseList({}: CourseListProps) {
   const [enrolledCourses, setEnrolledCourses] = useState<CourseWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const navigate = useNavigate()
+  const { user } = useAuth()
 
   useEffect(() => {
     const loadEnrolledCourses = async () => {
@@ -71,8 +72,18 @@ export function CourseList({}: CourseListProps) {
     return Math.round((enrollment.current_module_index / syllabus.modules.length) * 100)
   }
 
-  const handleContinueLearning = (courseId: string) => {
-    navigate(`/courses/${courseId}/learn`)
+  const handleContinueLearning = async (courseId: string) => {
+    if (!user) {
+      window.location.href = '/login'
+      return
+    }
+
+    // Store authentication data for cross-domain access
+    await authStorage.storeAuthForLibrary(user)
+    
+    // Redirect to external library
+    const libraryUrl = `https://www.library.everythinglearn.online/courses/${courseId}/learn`
+    window.open(libraryUrl, '_blank')
   }
 
   if (loading) {
@@ -183,12 +194,12 @@ export function CourseList({}: CourseListProps) {
               >
                 {isCompleted ? (
                   <>
-                    <TrendingUp className="h-4 w-4 mr-2" />
+                    <ExternalLink className="h-4 w-4 mr-2" />
                     Review Course
                   </>
                 ) : (
                   <>
-                    <Play className="h-4 w-4 mr-2" />
+                    <ExternalLink className="h-4 w-4 mr-2" />
                     Continue Learning
                   </>
                 )}

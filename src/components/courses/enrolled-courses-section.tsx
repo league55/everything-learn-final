@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,13 +8,15 @@ import { useAuth } from '@/providers/auth-provider'
 import { dbOperations } from '@/lib/supabase'
 import type { CourseWithDetails } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { authStorage } from '@/lib/auth-storage'
 import { 
   GraduationCap,
   Loader2,
   Clock,
   Target,
   Play,
-  CheckCircle
+  CheckCircle,
+  ExternalLink
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -25,7 +26,6 @@ export function EnrolledCoursesSection() {
   const [error, setError] = useState<string | null>(null)
   
   const { user } = useAuth()
-  const navigate = useNavigate()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -74,8 +74,18 @@ export function EnrolledCoursesSection() {
     return Math.round((enrollment.current_module_index / syllabus.modules.length) * 100)
   }
 
-  const handleContinueLearning = (courseId: string) => {
-    navigate(`/courses/${courseId}/learn`)
+  const handleContinueLearning = async (courseId: string) => {
+    if (!user) {
+      window.location.href = '/login'
+      return
+    }
+
+    // Store authentication data for cross-domain access
+    await authStorage.storeAuthForLibrary(user)
+    
+    // Redirect to external library
+    const libraryUrl = `https://www.library.everythinglearn.online/courses/${courseId}/learn`
+    window.open(libraryUrl, '_blank')
   }
 
   // Don't show this section if user is not authenticated
@@ -196,7 +206,7 @@ export function EnrolledCoursesSection() {
                     variant={isCompleted ? "outline" : "default"}
                     onClick={() => handleContinueLearning(course.id)}
                   >
-                    <Play className="h-4 w-4 mr-2" />
+                    <ExternalLink className="h-4 w-4 mr-2" />
                     {isCompleted ? 'Review Course' : 'Continue Learning'}
                   </Button>
                 </CardContent>
