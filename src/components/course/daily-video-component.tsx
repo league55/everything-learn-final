@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useCallFrame, useParticipantIds, useLocalParticipant, useParticipant } from '@daily-co/daily-react-hooks'
+import { useCallFrame, useParticipantIds, useLocalParticipant, useParticipant } from '@daily-co/daily-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
