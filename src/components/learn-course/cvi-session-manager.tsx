@@ -7,8 +7,7 @@ import type { CourseData } from './course-data-loader'
 
 interface UseCviSessionResult {
   showCviModal: boolean
-  tavusConversationId: string | null
-  tavusConversationUrl: string | null
+  dailyRoomUrl: string | null
   cviConversationType: 'practice' | 'exam'
   isInitiatingCvi: boolean
   handleInitiateTest: (conversationType: 'practice' | 'exam') => Promise<void>
@@ -23,8 +22,7 @@ export function useCviSession(
   setCourseReadyForCompletion: (ready: boolean) => void
 ): UseCviSessionResult {
   const [showCviModal, setShowCviModal] = useState(false)
-  const [tavusConversationId, setTavusConversationId] = useState<string | null>(null)
-  const [tavusConversationUrl, setTavusConversationUrl] = useState<string | null>(null)
+  const [dailyRoomUrl, setDailyRoomUrl] = useState<string | null>(null)
   const [cviConversationType, setCviConversationType] = useState<'practice' | 'exam'>('practice')
   const [isInitiatingCvi, setIsInitiatingCvi] = useState(false)
 
@@ -64,8 +62,8 @@ export function useCviSession(
 
       console.log('CVI session initiated successfully:', response)
 
-      setTavusConversationId(response.conversation_id)
-      setTavusConversationUrl(response.conversation_url)
+      // Set the Daily room URL from the Tavus response
+      setDailyRoomUrl(response.conversation_url)
       setShowFinalTestButton(false)
       setShowCviModal(true)
 
@@ -102,8 +100,7 @@ export function useCviSession(
       )
 
       setShowCviModal(false)
-      setTavusConversationId(null)
-      setTavusConversationUrl(null)
+      setDailyRoomUrl(null)
       setCourseReadyForCompletion(false)
       
       toast({
@@ -130,15 +127,13 @@ export function useCviSession(
 
   const handleCloseCvi = () => {
     setShowCviModal(false)
-    setTavusConversationId(null)
-    setTavusConversationUrl(null)
+    setDailyRoomUrl(null)
     setShowFinalTestButton(true) // Allow them to try again
   }
 
   return {
     showCviModal,
-    tavusConversationId,
-    tavusConversationUrl,
+    dailyRoomUrl,
     cviConversationType,
     isInitiatingCvi,
     handleInitiateTest,

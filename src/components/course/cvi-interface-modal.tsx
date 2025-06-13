@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { TavusConversation } from './tavus-conversation'
+import { DailyProvider } from '@daily-co/daily-react'
+import { DailyVideo } from './daily-video-component'
 import { 
   X, 
   Video, 
@@ -14,16 +15,14 @@ import {
 import { cn } from '@/lib/utils'
 
 interface CviInterfaceModalProps {
-  tavusConversationId: string
-  tavusConversationUrl: string
+  dailyRoomUrl: string
   conversationType: 'practice' | 'exam'
   onClose: () => void
   onComplete?: (transcript?: string) => void
 }
 
 export function CviInterfaceModal({
-  tavusConversationId,
-  tavusConversationUrl,
+  dailyRoomUrl,
   conversationType,
   onClose,
   onComplete
@@ -32,20 +31,26 @@ export function CviInterfaceModal({
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [sessionEnded, setSessionEnded] = useState(false)
   const [transcript, setTranscript] = useState<string>('')
+  const [isConnecting, setIsConnecting] = useState(true)
 
   const handleConversationEnd = (conversationTranscript?: string) => {
     console.log('CVI Modal: Conversation ended with transcript:', conversationTranscript?.substring(0, 100))
     setTranscript(conversationTranscript || '')
     setSessionEnded(true)
-    
-    // Don't auto-complete immediately, let user see the completion screen
-    // They can manually click to complete
+    setIsConnecting(false)
   }
 
   const handleError = (error: string) => {
     console.error('CVI Modal Error:', error)
     setErrorMessage(error)
     setHasError(true)
+    setIsConnecting(false)
+  }
+
+  const handleConnected = () => {
+    console.log('Successfully connected to Daily room')
+    setIsConnecting(false)
+    setHasError(false)
   }
 
   const handleManualComplete = () => {
@@ -140,7 +145,27 @@ export function CviInterfaceModal({
     )
   }
 
-  // Main conversation interface
+  // Connecting state
+  if (isConnecting) {
+    return (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <Card className="w-full max-w-2xl bg-card shadow-2xl">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <h3 className="text-lg font-semibold mb-2">Connecting to your expert...</h3>
+            <p className="text-muted-foreground mb-4">
+              Please allow camera and microphone access when prompted
+            </p>
+            <div className="text-xs text-muted-foreground">
+              This may take up to 30 seconds
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Main conversation interface with Daily Provider
   return (
     <div className="fixed inset-0 bg-black z-50">
       {/* Close button overlay */}
@@ -155,13 +180,16 @@ export function CviInterfaceModal({
         </Button>
       </div>
 
-      {/* Tavus Conversation Component */}
-      <TavusConversation
-        conversationUrl={tavusConversationUrl}
-        conversationType={conversationType}
-        onConversationEnd={handleConversationEnd}
-        onError={handleError}
-      />
+      {/* Daily Provider wraps the video component */}
+      <DailyProvider>
+        <DailyVideo
+          roomUrl={dailyRoomUrl}
+          conversationType={conversationType}
+          onConversationEnd={handleConversationEnd}
+          onError={handleError}
+          onConnected={handleConnected}
+        />
+      </DailyProvider>
     </div>
   )
 }

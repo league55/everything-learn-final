@@ -69,8 +69,7 @@ export function LearnCoursePage() {
   // Manage CVI sessions
   const {
     showCviModal,
-    tavusConversationId,
-    tavusConversationUrl,
+    dailyRoomUrl,
     cviConversationType,
     isInitiatingCvi,
     handleInitiateTest,
@@ -170,10 +169,9 @@ export function LearnCoursePage() {
       )}
 
       {/* CVI Interface Modal */}
-      {showCviModal && tavusConversationId && tavusConversationUrl && (
+      {showCviModal && dailyRoomUrl && (
         <CviInterfaceModal
-          tavusConversationId={tavusConversationId}
-          tavusConversationUrl={tavusConversationUrl}
+          dailyRoomUrl={dailyRoomUrl}
           conversationType={cviConversationType}
           onClose={handleCloseCvi}
           onComplete={handleCviComplete}
