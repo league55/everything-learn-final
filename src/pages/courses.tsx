@@ -7,6 +7,8 @@ import { Loader2 } from 'lucide-react'
 export function CoursesPage() {
   const { user, loading: authLoading } = useAuth()
 
+  console.log('CoursesPage render:', { user: user?.email, authLoading })
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

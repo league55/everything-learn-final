@@ -22,12 +22,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
+
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session: initialSession } } = await supabase.auth.getSession()
-      setSession(initialSession)
-      setUser(initialSession?.user ?? null)
-      setLoading(false)
+      try {
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Error getting initial session:', error)
+        }
+
+        if (mounted) {
+          setSession(initialSession)
+          setUser(initialSession?.user ?? null)
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Error in getInitialSession:', error)
+        if (mounted) {
+          setSession(null)
+          setUser(null)
+          setLoading(false)
+        }
+      }
     }
 
     getInitialSession()
@@ -35,32 +53,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
+        console.log('Auth state change:', event, session?.user?.email)
         
-        // Update stored auth data for library access
-        await authStorage.updateStoredAuthData(session?.user ?? null, session)
-        
-        if (event === 'SIGNED_OUT') {
-          setUser(null)
-          setSession(null)
-          authStorage.clearStoredAuthData()
+        if (mounted) {
+          setSession(session)
+          setUser(session?.user ?? null)
+          
+          // Update stored auth data for library access
+          try {
+            await authStorage.updateStoredAuthData(session?.user ?? null, session)
+          } catch (error) {
+            console.error('Error updating stored auth data:', error)
+          }
+          
+          if (event === 'SIGNED_OUT') {
+            setUser(null)
+            setSession(null)
+            authStorage.clearStoredAuthData()
+          }
+          
+          // Ensure loading is set to false after any auth state change
+          setLoading(false)
         }
-        
-        setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signOut = async () => {
-    setLoading(true)
-    authStorage.clearStoredAuthData()
-    await supabase.auth.signOut()
-    setUser(null)
-    setSession(null)
-    setLoading(false)
+    try {
+      setLoading(true)
+      authStorage.clearStoredAuthData()
+      await supabase.auth.signOut()
+      setUser(null)
+      setSession(null)
+    } catch (error) {
+      console.error('Error signing out:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const value = {
