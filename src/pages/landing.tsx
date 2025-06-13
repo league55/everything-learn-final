@@ -309,6 +309,7 @@ export function LandingPage() {
       </div>
 
       <style jsx>{`
+      <style>{`
         @keyframes blob-float-1 {
           0%, 100% {
             transform: translate(0px, 0px) scale(1) rotate(0deg);
