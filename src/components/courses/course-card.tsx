@@ -89,7 +89,7 @@ export function CourseCard({ course, onEnrollmentChange }: CourseCardProps) {
     await authStorage.storeAuthForLibrary(user)
     
     // Redirect to external library
-    const libraryUrl = `https://www.library.everythinglearn.online/courses/${course.id}/learn`
+    const libraryUrl = `https://library.everythinglearn.online/courses/${course.id}/learn`
     window.open(libraryUrl, '_blank')
   }
 
