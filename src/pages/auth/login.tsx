@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,12 +28,13 @@ export function LoginPage() {
   const location = useLocation()
   const { user } = useAuth()
 
-  // Redirect if already authenticated
-  if (user) {
-    const from = location.state?.from?.pathname || '/profile'
-    navigate(from, { replace: true })
-    return null
-  }
+  // Handle navigation in useEffect
+  useEffect(() => {
+    if (user) {
+      const from = location.state?.from?.pathname || '/profile'
+      navigate(from, { replace: true })
+    }
+  }, [user, navigate, location.state?.from?.pathname])
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
