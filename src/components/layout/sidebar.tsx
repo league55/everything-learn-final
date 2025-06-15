@@ -154,25 +154,7 @@ export function Sidebar({ className }: SidebarProps) {
               )}
             </div>
 
-            {/* Desktop Auth Status */}
-            {isDesktopExpanded && (
-              <div className="px-4 py-3 border-b border-border/50">
-                <div className="flex items-center space-x-2 text-sm">
-                  <div className={cn(
-                    "w-2 h-2 rounded-full flex-shrink-0",
-                    loading ? "bg-yellow-500" : isLoggedIn ? "bg-green-500" : "bg-red-500"
-                  )} />
-                  <span className="text-muted-foreground truncate">
-                    {loading 
-                      ? 'Loading...' 
-                      : isLoggedIn 
-                        ? user.email || 'Authenticated' 
-                        : 'Not signed in'
-                    }
-                  </span>
-                </div>
-              </div>
-            )}
+     
 
             {/* Desktop Navigation */}
             <nav className="flex-1 space-y-2 p-4">
@@ -206,6 +188,25 @@ export function Sidebar({ className }: SidebarProps) {
 
             {/* Desktop Bottom controls */}
             <div className="border-t border-border p-4 space-y-2">
+                     {/* Desktop Auth Status */}
+            {isDesktopExpanded && (
+              <div className="px-4 py-3 border-b border-border/50">
+                <div className="flex items-center space-x-2 text-sm">
+                  <div className={cn(
+                    "w-2 h-2 rounded-full flex-shrink-0",
+                    loading ? "bg-yellow-500" : isLoggedIn ? "bg-green-500" : "bg-red-500"
+                  )} />
+                  <span className="text-muted-foreground truncate">
+                    {loading 
+                      ? 'Loading...' 
+                      : isLoggedIn 
+                        ? user.email || 'Authenticated' 
+                        : 'Not signed in'
+                    }
+                  </span>
+                </div>
+              </div>
+            )}
               <Button
                 variant="ghost"
                 className={cn(
