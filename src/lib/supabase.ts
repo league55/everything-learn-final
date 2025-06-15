@@ -7,20 +7,85 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
+// Dynamic domain detection for cookie storage
+function getCookieDomain(): string {
+  if (typeof window === 'undefined') return ''
+  
+  const hostname = window.location.hostname
+  
+  // For localhost and IP addresses, don't set domain
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+    return ''
+  }
+  
+  // For bolt.new and its subdomains
+  if (hostname.includes('bolt.new')) {
+    return '.bolt.new'
+  }
+  
+  // For everythinglearn.online and its subdomains
+  if (hostname.includes('everythinglearn.online')) {
+    return '.everythinglearn.online'
+  }
+  
+  // For other domains, try to extract the main domain
+  const parts = hostname.split('.')
+  if (parts.length >= 2) {
+    return `.${parts.slice(-2).join('.')}`
+  }
+  
+  return ''
+}
+
+function getCookieAttributes(): string {
+  const domain = getCookieDomain()
+  const isSecure = window.location.protocol === 'https:'
+  
+  let attributes = 'path=/; samesite=lax; max-age=31536000' // 1 year
+  
+  if (domain) {
+    attributes += `; domain=${domain}`
+  }
+  
+  if (isSecure) {
+    attributes += '; secure'
+  }
+  
+  return attributes
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storageKey: 'supabase.auth.token',
     storage: {
       getItem: (key: string) => {
+        if (typeof document === 'undefined') return null
+        
         const cookies = document.cookie.split(';')
         const cookie = cookies.find(c => c.trim().startsWith(`${key}=`))
         return cookie ? decodeURIComponent(cookie.split('=')[1]) : null
       },
       setItem: (key: string, value: string) => {
-        document.cookie = `${key}=${encodeURIComponent(value)}; domain=.everythinglearn.online; path=/; secure; samesite=lax; max-age=31536000`
+        if (typeof document === 'undefined') return
+        
+        const attributes = getCookieAttributes()
+        document.cookie = `${key}=${encodeURIComponent(value)}; ${attributes}`
       },
       removeItem: (key: string) => {
-        document.cookie = `${key}=; domain=.everythinglearn.online; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=lax`
+        if (typeof document === 'undefined') return
+        
+        const domain = getCookieDomain()
+        let attributes = 'path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax'
+        
+        if (domain) {
+          attributes += `; domain=${domain}`
+        }
+        
+        if (window.location.protocol === 'https:') {
+          attributes += '; secure'
+        }
+        
+        document.cookie = `${key}=; ${attributes}`
       }
     },
     autoRefreshToken: true,
