@@ -92,23 +92,15 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
           </div>
         </div>
 
-        {/* Additional user metadata if available */}
-        {user?.user_metadata && Object.keys(user.user_metadata).length > 0 && (
+        {/* Basic account info without metadata */}
+        {user?.last_sign_in_at && (
           <div className="pt-2 border-t">
             <p className="text-xs text-muted-foreground mb-2">Account Details</p>
             <div className="space-y-1 text-xs">
-              {user.user_metadata.provider && (
-                <div className="flex justify-between">
-                  <span>Provider:</span>
-                  <span className="capitalize">{user.user_metadata.provider}</span>
-                </div>
-              )}
-              {user.last_sign_in_at && (
-                <div className="flex justify-between">
-                  <span>Last Sign In:</span>
-                  <span>{formatDate(user.last_sign_in_at)}</span>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span>Last Sign In:</span>
+                <span>{formatDate(user.last_sign_in_at)}</span>
+              </div>
             </div>
           </div>
         )}
