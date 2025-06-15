@@ -96,9 +96,9 @@ export function CourseCard({ course, onEnrollmentChange }: CourseCardProps) {
   const isEnrolled = course.user_enrollment !== undefined
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      <CardHeader>
-        <CardTitle className="text-lg line-clamp-2">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+      <CardHeader className="flex-shrink-0">
+        <CardTitle className="text-lg line-clamp-2 min-h-[3.5rem]">
           {course.topic}
         </CardTitle>
         <div className="flex items-center gap-2 flex-wrap">
@@ -115,65 +115,72 @@ export function CourseCard({ course, onEnrollmentChange }: CourseCardProps) {
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground line-clamp-3">
-          {course.context}
-        </p>
-        
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            <span>{course.enrollment_count || 0} enrolled</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <User className="h-4 w-4" />
-            <span>By community</span>
-          </div>
+      
+      <CardContent className="flex-1 flex flex-col justify-between space-y-4">
+        {/* Main content area */}
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground line-clamp-3 min-h-[4.5rem]">
+            {course.context}
+          </p>
+          
+          {course.syllabus?.keywords && course.syllabus.keywords.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {course.syllabus.keywords.slice(0, 3).map((keyword, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  {keyword}
+                </Badge>
+              ))}
+              {course.syllabus.keywords.length > 3 && (
+                <Badge variant="outline" className="text-xs">
+                  +{course.syllabus.keywords.length - 3}
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
 
-        {course.syllabus?.keywords && course.syllabus.keywords.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {course.syllabus.keywords.slice(0, 3).map((keyword, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {keyword}
-              </Badge>
-            ))}
-            {course.syllabus.keywords.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{course.syllabus.keywords.length - 3}
-              </Badge>
-            )}
+        {/* Footer area - always at bottom */}
+        <div className="space-y-4 mt-auto">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              <span>{course.enrollment_count || 0} enrolled</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <User className="h-4 w-4" />
+              <span>By community</span>
+            </div>
           </div>
-        )}
 
-        {isEnrolled ? (
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={handleContinueLearning}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Continue Learning
-          </Button>
-        ) : (
-          <Button 
-            className="w-full"
-            onClick={handleEnroll}
-            disabled={enrolling}
-          >
-            {enrolling ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Enrolling...
-              </>
-            ) : (
-              <>
-                <BookOpen className="h-4 w-4 mr-2" />
-                {user ? 'Enroll Now' : 'Sign In to Enroll'}
-              </>
-            )}
-          </Button>
-        )}
+          {isEnrolled ? (
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={handleContinueLearning}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Continue Learning
+            </Button>
+          ) : (
+            <Button 
+              className="w-full"
+              onClick={handleEnroll}
+              disabled={enrolling}
+            >
+              {enrolling ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enrolling...
+                </>
+              ) : (
+                <>
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  {user ? 'Enroll Now' : 'Sign In to Enroll'}
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
