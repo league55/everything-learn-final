@@ -68,13 +68,6 @@ export interface GeneratedContent {
   content: string
   description?: string
   citations: Citation[]
-  metadata: {
-    word_count: number
-    estimated_reading_time: number
-    difficulty_level: string
-    key_concepts: string[]
-    learning_objectives: string[]
-  }
 }
 
 export interface Citation {

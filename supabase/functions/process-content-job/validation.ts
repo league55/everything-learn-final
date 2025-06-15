@@ -16,22 +16,12 @@ export const CitationSchema = z.object({
   excerpt: z.string().max(500).optional(),
 })
 
-// Generated content metadata schema
-export const ContentMetadataSchema = z.object({
-  word_count: z.number().min(0),
-  estimated_reading_time: z.number().min(0),
-  difficulty_level: z.enum(['beginner', 'intermediate', 'advanced', 'expert']),
-  key_concepts: z.array(z.string()).min(1).max(20),
-  learning_objectives: z.array(z.string()).min(1).max(10),
-})
-
-// Generated content schema
+// Generated content schema (without metadata)
 export const GeneratedContentSchema = z.object({
   title: z.string().min(10).max(200),
   content: z.string().min(500).max(8000), // Manageable chunk size
   description: z.string().min(20).max(500).optional(),
   citations: z.array(CitationSchema).min(3).max(15),
-  metadata: ContentMetadataSchema,
 })
 
 export function validateGeneratedContent(data: any) {

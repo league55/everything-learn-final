@@ -179,7 +179,6 @@ export class DatabaseService {
           content: generatedContent.content,
           format: 'markdown',
           citations: generatedContent.citations,
-          metadata: generatedContent.metadata,
           generated_at: new Date().toISOString()
         },
         file_path: null,
@@ -188,8 +187,7 @@ export class DatabaseService {
         order_index: nextOrderIndex,
         metadata: {
           ai_generated: true,
-          generation_timestamp: new Date().toISOString(),
-          ...generatedContent.metadata
+          generation_timestamp: new Date().toISOString()
         }
       })
       .select()

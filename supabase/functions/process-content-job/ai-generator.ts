@@ -100,14 +100,7 @@ CRITICAL REQUIREMENTS:
       "relevance_score": 0.95,
       "excerpt": "Brief relevant excerpt from source"
     }
-  ],
-  "metadata": {
-    "word_count": 750,
-    "estimated_reading_time": 3,
-    "difficulty_level": "intermediate",
-    "key_concepts": ["concept1", "concept2"],
-    "learning_objectives": ["objective1", "objective2"]
-  }
+  ]
 }
 
 CONTENT QUALITY STANDARDS:

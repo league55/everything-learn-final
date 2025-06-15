@@ -9,7 +9,6 @@ export interface ContentGenerationRequest {
   prompt: string
   title: string
   description?: string
-  metadata?: Record<string, any>
 }
 
 export interface FileUploadRequest {
@@ -20,7 +19,6 @@ export interface FileUploadRequest {
   title: string
   description?: string
   contentType: ContentType
-  metadata?: Record<string, any>
 }
 
 export class ContentService {
@@ -91,7 +89,10 @@ export class ContentService {
         file_size: request.file.size,
         mime_type: request.file.type,
         order_index: 0, // Will be updated based on existing content
-        metadata: request.metadata || {}
+        metadata: {
+          uploaded: true,
+          upload_timestamp: new Date().toISOString()
+        }
       })
 
       return contentItem
@@ -108,8 +109,7 @@ export class ContentService {
     topicIndex: number,
     title: string,
     content: string,
-    description?: string,
-    metadata?: Record<string, any>
+    description?: string
   ): Promise<ContentItem> {
     try {
       const contentItem = await dbOperations.createContentItem({
@@ -128,7 +128,10 @@ export class ContentService {
         file_size: null,
         mime_type: 'text/markdown',
         order_index: 0,
-        metadata: metadata || {}
+        metadata: {
+          user_created: true,
+          creation_timestamp: new Date().toISOString()
+        }
       })
 
       return contentItem
