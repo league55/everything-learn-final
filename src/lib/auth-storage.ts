@@ -19,11 +19,6 @@ function getCookieDomain(): string {
     return ''
   }
   
-  // For bolt.new and its subdomains
-  if (hostname.includes('bolt.new')) {
-    return '.bolt.new'
-  }
-  
   // For everythinglearn.online and its subdomains
   if (hostname.includes('everythinglearn.online')) {
     return '.everythinglearn.online'
@@ -95,12 +90,10 @@ export class AuthStorage {
   /**
    * Store authentication data for cross-domain library access
    */
-  async storeAuthForLibrary(user: User): Promise<void> {
+  async storeAuthForLibrary(user: User, session: Session): Promise<void> {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      
       if (!session) {
-        console.warn('No active session found')
+        console.warn('No session provided')
         return
       }
 
@@ -191,7 +184,7 @@ export class AuthStorage {
       return
     }
 
-    await this.storeAuthForLibrary(user)
+    await this.storeAuthForLibrary(user, session)
   }
 
   /**

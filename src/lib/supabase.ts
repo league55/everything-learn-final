@@ -12,28 +12,29 @@ function getCookieDomain(): string {
   if (typeof window === 'undefined') return ''
   
   const hostname = window.location.hostname
+  console.log('Current hostname:', hostname)
   
   // For localhost and IP addresses, don't set domain
   if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+    console.log('Using localhost/IP - no domain set')
     return ''
-  }
-  
-  // For bolt.new and its subdomains
-  if (hostname.includes('bolt.new')) {
-    return '.bolt.new'
   }
   
   // For everythinglearn.online and its subdomains
   if (hostname.includes('everythinglearn.online')) {
+    console.log('Using everythinglearn.online domain')
     return '.everythinglearn.online'
   }
   
   // For other domains, try to extract the main domain
   const parts = hostname.split('.')
   if (parts.length >= 2) {
-    return `.${parts.slice(-2).join('.')}`
+    const domain = `.${parts.slice(-2).join('.')}`
+    console.log('Extracted domain:', domain)
+    return domain
   }
   
+  console.log('No domain set')
   return ''
 }
 
@@ -54,40 +55,68 @@ function getCookieAttributes(): string {
   return attributes
 }
 
+// Create a custom storage implementation
+const customStorage = {
+  getItem: (key: string) => {
+    try {
+      console.log('Getting cookie:', key)
+      const cookies = document.cookie.split(';')
+      const cookie = cookies.find(c => c.trim().startsWith(`${key}=`))
+      const value = cookie ? decodeURIComponent(cookie.split('=')[1]) : null
+      console.log('Cookie value:', value ? 'exists' : 'null')
+      return value
+    } catch (error) {
+      console.error('Error getting cookie:', error)
+      return null
+    }
+  },
+  setItem: (key: string, value: string) => {
+    try {
+      console.log('Setting cookie:', key)
+      const domain = getCookieDomain()
+      let attributes = 'path=/; samesite=lax; max-age=31536000' // 1 year
+      
+      if (domain) {
+        attributes += `; domain=${domain}`
+      }
+      
+      if (window.location.protocol === 'https:') {
+        attributes += '; secure'
+      }
+      
+      console.log('Cookie attributes:', attributes)
+      document.cookie = `${key}=${encodeURIComponent(value)}; ${attributes}`
+    } catch (error) {
+      console.error('Error setting cookie:', error)
+    }
+  },
+  removeItem: (key: string) => {
+    try {
+      console.log('Removing cookie:', key)
+      const domain = getCookieDomain()
+      let attributes = 'path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax'
+      
+      if (domain) {
+        attributes += `; domain=${domain}`
+      }
+      
+      if (window.location.protocol === 'https:') {
+        attributes += '; secure'
+      }
+      
+      console.log('Cookie removal attributes:', attributes)
+      document.cookie = `${key}=; ${attributes}`
+    } catch (error) {
+      console.error('Error removing cookie:', error)
+    }
+  }
+}
+
+// Create the Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storageKey: 'supabase.auth.token',
-    storage: {
-      getItem: (key: string) => {
-        if (typeof document === 'undefined') return null
-        
-        const cookies = document.cookie.split(';')
-        const cookie = cookies.find(c => c.trim().startsWith(`${key}=`))
-        return cookie ? decodeURIComponent(cookie.split('=')[1]) : null
-      },
-      setItem: (key: string, value: string) => {
-        if (typeof document === 'undefined') return
-        
-        const attributes = getCookieAttributes()
-        document.cookie = `${key}=${encodeURIComponent(value)}; ${attributes}`
-      },
-      removeItem: (key: string) => {
-        if (typeof document === 'undefined') return
-        
-        const domain = getCookieDomain()
-        let attributes = 'path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax'
-        
-        if (domain) {
-          attributes += `; domain=${domain}`
-        }
-        
-        if (window.location.protocol === 'https:') {
-          attributes += '; secure'
-        }
-        
-        document.cookie = `${key}=; ${attributes}`
-      }
-    },
+    storageKey: 'sb-auth-token',
+    storage: customStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true
