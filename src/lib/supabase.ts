@@ -7,7 +7,27 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storageKey: 'supabase.auth.token',
+    storage: {
+      getItem: (key: string) => {
+        const cookies = document.cookie.split(';')
+        const cookie = cookies.find(c => c.trim().startsWith(`${key}=`))
+        return cookie ? decodeURIComponent(cookie.split('=')[1]) : null
+      },
+      setItem: (key: string, value: string) => {
+        document.cookie = `${key}=${encodeURIComponent(value)}; domain=.everythinglearn.online; path=/; secure; samesite=lax; max-age=31536000`
+      },
+      removeItem: (key: string) => {
+        document.cookie = `${key}=; domain=.everythinglearn.online; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=lax`
+      }
+    },
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+})
 
 // Types for our database schema
 export interface CourseConfiguration {
