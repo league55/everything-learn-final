@@ -405,3 +405,5 @@ export function Sidebar({ className }: SidebarProps) {
     </>
   )
 }
+
+export { Sidebar }
