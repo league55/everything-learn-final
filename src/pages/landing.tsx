@@ -39,7 +39,7 @@ export function LandingPage() {
         
         {/* Scroll Indicator */}
         <motion.div
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center"
+          className="absolute bottom-8 transform -translate-x-1/2 z-10 flex flex-col items-center"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2, duration: 0.8 }}
@@ -54,7 +54,7 @@ export function LandingPage() {
             }}
           >
             <span className="text-sm font-medium group-hover:text-foreground transition-colors">
-              Scroll to explore
+              Learn more
             </span>
             <motion.div
               className="w-6 h-10 border-2 border-muted-foreground/30 rounded-full flex justify-center group-hover:border-foreground/50 transition-colors"
