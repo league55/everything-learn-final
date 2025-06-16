@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import Typewriter from 'typewriter-effect'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
+import { CustomTypewriter } from './custom-typewriter'
 
 const topics = [
   {
@@ -41,6 +41,10 @@ export function TypewriterHero() {
     }
   }
 
+  const handleStringChange = (index: number) => {
+    setCurrentTopicIndex(index)
+  }
+
   useEffect(() => {
     setImageLoaded(false)
     // Preload the image
@@ -67,34 +71,13 @@ export function TypewriterHero() {
                 Today I want to learn
               </h1>
               
-              <div className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent min-h-[1.2em]">
-                <Typewriter
-                  options={{
-                    strings: topics.map(topic => topic.text),
-                    autoStart: true,
-                    loop: true,
-                    delay: 75,
-                    deleteSpeed: 50,
-                    pauseFor: 2000,
-                  }}
-                  onInit={(typewriter) => {
-                    let currentIndex = 0
-                    
-                    typewriter
-                      .callFunction(() => {
-                        setCurrentTopicIndex(currentIndex)
-                        currentIndex = (currentIndex + 1) % topics.length
-                      })
-                      .start()
-
-                    // Update image on each cycle
-                    const interval = setInterval(() => {
-                      setCurrentTopicIndex(currentIndex)
-                      currentIndex = (currentIndex + 1) % topics.length
-                    }, 4000) // Approximate time for each cycle
-
-                    return () => clearInterval(interval)
-                  }}
+              <div className="text-4xl lg:text-6xl font-bold min-h-[1.5em] flex items-center">
+                <CustomTypewriter
+                  strings={topics.map(topic => topic.text)}
+                  onStringChange={handleStringChange}
+                  typingSpeed={100}
+                  deletingSpeed={50}
+                  pauseDuration={2000}
                 />
               </div>
             </div>
@@ -127,7 +110,7 @@ export function TypewriterHero() {
 
           {/* Right Side - Dynamic Image */}
           <div className="lg:col-span-1 flex justify-center lg:justify-end">
-            <div className="relative w-full max-w-md aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl">
+            <div className="relative w-full max-w-sm aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent z-10" />
               
               <img
