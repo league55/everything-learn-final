@@ -24,7 +24,7 @@ const steps = [
   },
   {
     id: 2,
-    header: "Why do you want to learn it?",
+    header: "Why do you want to learn?",
     subheader: "Give us some context about how you would apply this knowledge, so we could adjust the course to your needs",
     field: 'context' as keyof CourseForm
   },
