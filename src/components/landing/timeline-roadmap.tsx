@@ -46,17 +46,18 @@ const timelineSteps = [
 
 export function TimelineRoadmap() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const timelineRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, margin: "-100px" })
   
+  // Track scroll progress through the timeline section
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start center", "end center"]
+    offset: ["start 0.8", "end 0.2"]
   })
 
-  // Use useTransform for 60fps smooth animations
-  const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"])
-  const lineOpacity = useTransform(scrollYProgress, [0, 0.1], [0, 1])
-  const lineScale = useTransform(scrollYProgress, [0, 0.1, 0.9, 1], [0, 1, 1, 1.1])
+  // Use useTransform for smooth 60fps animations
+  const lineProgress = useTransform(scrollYProgress, [0, 1], [0, 1])
+  const lineOpacity = useTransform(scrollYProgress, [0, 0.05], [0, 1])
   
   return (
     <section ref={containerRef} className="relative py-24 bg-gradient-to-b from-background to-muted/20">
@@ -80,31 +81,44 @@ export function TimelineRoadmap() {
         </motion.div>
 
         {/* Timeline Container */}
-        <div className="relative">
+        <div ref={timelineRef} className="relative min-h-[800px]">
+          {/* Background Line */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-1 bg-border/30 rounded-full" />
+          
           {/* Animated Central Line */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 w-1 bg-muted/20 h-full">
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-1 overflow-hidden rounded-full">
             <motion.div
-              className="w-full bg-gradient-to-b from-[#6366f1] via-[#8b5cf6] to-[#06b6d4] rounded-full shadow-lg origin-top"
+              className="w-full bg-gradient-to-b from-[#6366f1] via-[#8b5cf6] via-[#ec4899] to-[#10b981] shadow-lg relative"
               style={{ 
-                height: lineHeight,
+                height: "100%",
+                scaleY: lineProgress,
                 opacity: lineOpacity,
-                scaleY: lineScale
+                originY: 0
               }}
-            />
-            
-            {/* Glowing effect */}
-            <motion.div
-              className="absolute inset-0 w-3 -left-1 bg-gradient-to-b from-[#6366f1]/20 via-[#8b5cf6]/20 to-[#06b6d4]/20 rounded-full blur-md origin-top"
-              style={{ 
-                height: lineHeight,
-                opacity: lineOpacity,
-                scaleY: lineScale
-              }}
-            />
+            >
+              {/* Glowing effect */}
+              <div className="absolute inset-0 bg-gradient-to-b from-[#6366f1]/40 via-[#8b5cf6]/40 via-[#ec4899]/40 to-[#10b981]/40 blur-sm" />
+              
+              {/* Moving dot at the end of the line */}
+              <motion.div
+                className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg border-2 border-current"
+                style={{
+                  opacity: lineProgress
+                }}
+                animate={{
+                  scale: [1, 1.2, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            </motion.div>
           </div>
 
           {/* Timeline Steps */}
-          <div className="space-y-32">
+          <div className="space-y-32 relative z-10">
             {timelineSteps.map((step, index) => {
               const isEven = index % 2 === 0
               
@@ -181,7 +195,7 @@ export function TimelineRoadmap() {
 
                   {/* Central Timeline Node */}
                   <motion.div
-                    className="absolute left-1/2 transform -translate-x-1/2 z-10"
+                    className="absolute left-1/2 transform -translate-x-1/2 z-20"
                     initial={{ scale: 0, opacity: 0 }}
                     whileInView={{ scale: 1, opacity: 1 }}
                     viewport={{ once: true, margin: "-150px" }}
@@ -220,7 +234,7 @@ export function TimelineRoadmap() {
 
           {/* Bottom completion indicator */}
           <motion.div
-            className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 z-10"
+            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 z-20"
             initial={{ scale: 0, opacity: 0, y: 30 }}
             whileInView={{ scale: 1, opacity: 1, y: 0 }}
             viewport={{ once: true }}
