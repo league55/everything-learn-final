@@ -21,7 +21,20 @@ import {
   Camera,
   Music,
   BookOpen,
-  Calculator
+  Calculator,
+  Terminal,
+  Lock,
+  Layers,
+  Coffee,
+  Utensils,
+  TreePine,
+  Droplets,
+  Mic,
+  Scissors,
+  Clock,
+  Mail,
+  Leaf,
+  Shapes
 } from 'lucide-react'
 
 // Import required Swiper styles
@@ -33,26 +46,37 @@ interface TopicCarouselProps {
 }
 
 const topics = [
-  { title: "React Development", icon: Code },
-  { title: "Machine Learning", icon: Brain },
-  { title: "Digital Marketing", icon: TrendingUp },
-  { title: "Python Programming", icon: FileCode },
-  { title: "Web Design", icon: Palette },
-  { title: "Data Science", icon: BarChart3 },
-  { title: "Mobile App Development", icon: Smartphone },
-  { title: "Cybersecurity", icon: Shield },
-  { title: "Cloud Computing", icon: Cloud },
-  { title: "Blockchain Technology", icon: Coins },
-  { title: "UI/UX Design", icon: Figma },
-  { title: "DevOps", icon: GitBranch },
-  { title: "Artificial Intelligence", icon: Bot },
-  { title: "Game Development", icon: Gamepad2 },
-  { title: "E-commerce", icon: ShoppingCart },
-  { title: "Database Management", icon: Database },
-  { title: "Photography", icon: Camera },
-  { title: "Music Production", icon: Music },
-  { title: "Creative Writing", icon: BookOpen },
-  { title: "Financial Analysis", icon: Calculator }
+  // Technical - narrow scope
+  { title: "React useState Hook", icon: Code },
+  { title: "Python List Comprehensions", icon: FileCode },
+  { title: "CSS Flexbox Layout", icon: Palette },
+  { title: "Git Branching Strategies", icon: GitBranch },
+  { title: "SQL JOIN Operations", icon: Database },
+  { title: "JavaScript Async/Await", icon: Code },
+  { title: "Docker Container Basics", icon: Cloud },
+  { title: "API Rate Limiting", icon: Shield },
+  { title: "Redux State Management", icon: Layers },
+  { title: "TypeScript Interfaces", icon: FileCode },
+  { title: "Linux Command Line", icon: Terminal },
+  { title: "JWT Authentication", icon: Lock },
+  
+  // Non-technical - narrow scope
+  { title: "French Pronunciation", icon: Mic },
+  { title: "Sourdough Bread Making", icon: Utensils },
+  { title: "Chess Opening Theory", icon: Brain },
+  { title: "Watercolor Wet-on-Wet", icon: Droplets },
+  { title: "Personal Budgeting", icon: Calculator },
+  { title: "Speed Reading Techniques", icon: BookOpen },
+  { title: "Wine Tasting Basics", icon: Coffee },
+  { title: "Public Speaking Body Language", icon: Users },
+  { title: "Meditation Breathing", icon: TreePine },
+  { title: "Knitting Basic Stitches", icon: Scissors },
+  { title: "Guitar Chord Progressions", icon: Music },
+  { title: "Time Management Pomodoro", icon: Clock },
+  { title: "Email Writing Etiquette", icon: Mail },
+  { title: "Houseplant Care", icon: Leaf },
+  { title: "Origami Basic Folds", icon: Shapes },
+  { title: "Photography Rule of Thirds", icon: Camera }
 ]
 
 // Split topics into two rows
@@ -174,3 +198,4 @@ export function TopicCarousel({ onTopicSelect, isActive }: TopicCarouselProps) {
     </div>
   )
 }
+</action>
