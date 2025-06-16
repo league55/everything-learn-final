@@ -198,4 +198,3 @@ export function TopicCarousel({ onTopicSelect, isActive }: TopicCarouselProps) {
     </div>
   )
 }
-</action>
