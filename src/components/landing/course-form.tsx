@@ -19,7 +19,7 @@ const steps = [
   {
     id: 1,
     header: "What do you want to learn today?",
-    subheader: null,
+    subheader: "We recommend to create courses with narrow scope, you can always generate more ;)",
     field: 'topic' as keyof CourseForm
   },
   {
