@@ -6,8 +6,8 @@ import { ShootingStars } from '@/components/landing/shoting-stars'
 export function LandingPage() {
   return (
     <div className="relative">
-      {/* Hero Section - Base layer */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background z-10">
+      {/* Hero Section */}
+      <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
         <ShootingStars
           starColor="#9E00FF"
           trailColor="#2EB9DF"
@@ -34,12 +34,10 @@ export function LandingPage() {
         /> 
         <AnimatedBackground />
         <CourseForm />
-      </section>
+      </div>
 
-      {/* Roadmap Section - Overlay layer */}
-      <section className="scroll-overlay-section relative z-20">
-        <Roadmap />
-      </section>
+      {/* Roadmap Timeline Section */}
+      <Roadmap />
     </div>
   )
 }

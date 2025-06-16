@@ -196,17 +196,9 @@ export function Roadmap() {
   // Transform scroll progress to line height
   const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
-  // Enhanced scroll-based transform for overlay effect
-  const overlayY = useTransform(scrollYProgress, [0, 0.3, 1], [100, 10, 0]);
-  const overlayOpacity = useTransform(scrollYProgress, [0, 0.2, 1], [0.8, 0.95, 1]);
-
   return (
-    <motion.div
+    <section 
       ref={containerRef}
-      style={{ 
-        y: `${overlayY}vh`,
-        opacity: overlayOpacity
-      }}
       className="relative py-24 bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900 text-white overflow-hidden min-h-screen"
     >
       {/* Background Pattern */}
@@ -232,9 +224,6 @@ export function Roadmap() {
           transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
         />
       </div>
-
-      {/* Top rounded overlay edge */}
-      <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-slate-900 to-transparent rounded-t-3xl shadow-2xl" />
 
       <div className="relative max-w-6xl mx-auto px-6">
         {/* Section Header */}
@@ -297,6 +286,6 @@ export function Roadmap() {
           </motion.div>
         </motion.div>
       </div>
-    </motion.div>
+    </section>
   );
 }

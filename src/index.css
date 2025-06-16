@@ -81,54 +81,6 @@
   }
 }
 
-/* Scrolling Overlay Effect */
-@layer components {
-  .scroll-overlay-section {
-    position: sticky;
-    top: 0;
-    margin-top: -100vh;
-    transform: translateY(100vh);
-    transition: transform 0.1s ease-out;
-  }
-  
-  /* Enhanced scroll overlay with smooth rolling effect */
-  .scroll-overlay-section {
-    will-change: transform;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    transform-style: preserve-3d;
-  }
-
-  /* Smooth scroll behavior */
-  html {
-    scroll-behavior: smooth;
-  }
-
-  /* Custom scroll overlay animation */
-  @supports (animation-timeline: scroll()) {
-    .scroll-overlay-section {
-      animation: roll-overlay ease-out both;
-      animation-timeline: scroll();
-      animation-range: 50vh 150vh;
-    }
-  }
-
-  @keyframes roll-overlay {
-    0% {
-      transform: translateY(100vh) rotateX(-5deg);
-      opacity: 0.8;
-    }
-    50% {
-      transform: translateY(50vh) rotateX(-2deg);
-      opacity: 0.9;
-    }
-    100% {
-      transform: translateY(0) rotateX(0deg);
-      opacity: 1;
-    }
-  }
-}
-
 .split-text {
   overflow: hidden;
 }
