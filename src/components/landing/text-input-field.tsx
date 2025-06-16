@@ -152,7 +152,7 @@ export function TextInputField({
               className={`
                 h-5 w-5 text-muted-foreground transition-all duration-500 ease-in-out
                 ${isFocused 
-                  ? 'rotate-360 text-[#6366f1] scale-110' 
+                  ? 'rotate-[360deg] text-[#6366f1] scale-110' 
                   : 'rotate-0 scale-100'
                 }
               `}
@@ -215,6 +215,3 @@ export function TextInputField({
     </div>
   )
 }
-</thinking>
-
-I need to add a custom CSS class for the 360-degree rotation. Let me also add that to the global styles:
