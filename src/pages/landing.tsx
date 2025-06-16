@@ -1,6 +1,5 @@
 import { AnimatedBackground } from '@/components/landing/animated-background'
 import { CourseForm } from '@/components/landing/course-form' 
-import { RoadmapTimeline } from '@/components/landing/roadmap-timeline'
 import { Roadmap } from '@/components/landing/roadmap'
 import { ShootingStars } from '@/components/landing/shoting-stars'
 
@@ -39,7 +38,6 @@ export function LandingPage() {
 
       {/* Roadmap Timeline Section */}
       <Roadmap />
-      <RoadmapTimeline />
     </div>
   )
 }
