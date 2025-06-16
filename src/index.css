@@ -110,3 +110,23 @@ button, a {
 .bottom-nav-spacing {
   padding-bottom: 88px; /* Space for bottom navigation */
 }
+
+/* Custom rotation animation */
+.rotate-360 {
+  transform: rotate(360deg);
+}
+
+/* Enhanced gradient animation */
+@keyframes gradient-shift-enhanced {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-enhanced {
+  background-size: 200% 200%;
+  animation: gradient-shift-enhanced 3s ease infinite;
+}
