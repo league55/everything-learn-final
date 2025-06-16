@@ -129,8 +129,9 @@ export function Roadmap({}: RoadmapProps) {
 
   return (
     <section 
+      ref={containerRef}
       id="roadmap" 
-      className="min-h-screen py-24 bg-gradient-to-b from-space-900 via-space-950 to-space-900 relative overflow-hidden"
+      className="py-24 bg-gradient-to-b from-space-900 via-space-950 to-space-900 relative overflow-hidden"
     >
       <CosmicBackground />
 
