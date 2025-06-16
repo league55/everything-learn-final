@@ -4,6 +4,7 @@ import { FormHeader } from './form-header'
 import { TextInputField } from './text-input-field'
 import { DepthSelector } from './depth-selector'
 import { NavigationButtons } from './navigation-buttons'
+import { TopicCarousel } from './topic-carousel'
 import { dbOperations } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 
@@ -121,6 +122,12 @@ export function CourseForm() {
     }))
   }
 
+  const handleTopicSelect = (topic: string) => {
+    if (currentStep === 1) {
+      handleInputChange('topic', topic)
+    }
+  }
+
   const canProceed = () => {
     switch (currentStep) {
       case 1:
@@ -174,6 +181,14 @@ export function CourseForm() {
                 value={formData.depth}
                 onChange={(value) => handleInputChange('depth', value)}
                 disabled={isSubmitting}
+              />
+            )}
+
+            {/* Topic Carousel - Only show on step 1 */}
+            {currentStep === 1 && (
+              <TopicCarousel 
+                onTopicSelect={handleTopicSelect}
+                isActive={currentStep === 1}
               />
             )}
 
