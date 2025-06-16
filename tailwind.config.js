@@ -11,7 +11,6 @@ export default {
     extend: {
       fontFamily: {
         'helvetica': ['Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
-        'akaya': ['"Akaya Telivigala"', 'cursive'],
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -120,14 +119,6 @@ export default {
             opacity: '1',
             transform: 'translateY(0)',
           },
-        },
-        'blink': {
-          '0%, 50%': {
-            opacity: '1',
-          },
-          '51%, 100%': {
-            opacity: '0',
-          },
         }
       },
       animation: {
@@ -136,7 +127,6 @@ export default {
         'slide-in': 'slide-in 0.3s ease-out',
         'fade-in': 'fade-in 0.5s ease-out',
         'split-text': 'split-text 0.8s ease-out',
-        'blink': 'blink 0.7s infinite',
       },
     },
   },
