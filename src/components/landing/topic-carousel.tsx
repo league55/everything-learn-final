@@ -34,7 +34,8 @@ import {
   Clock,
   Mail,
   Leaf,
-  Shapes
+  Shapes,
+  Users
 } from 'lucide-react'
 
 // Import required Swiper styles
