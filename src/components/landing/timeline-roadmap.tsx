@@ -50,11 +50,13 @@ export function TimelineRoadmap() {
   
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start end", "end start"]
+    offset: ["start center", "end center"]
   })
 
+  // Use useTransform for 60fps smooth animations
   const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"])
   const lineOpacity = useTransform(scrollYProgress, [0, 0.1], [0, 1])
+  const lineScale = useTransform(scrollYProgress, [0, 0.1, 0.9, 1], [0, 1, 1, 1.1])
   
   return (
     <section ref={containerRef} className="relative py-24 bg-gradient-to-b from-background to-muted/20">
@@ -62,9 +64,9 @@ export function TimelineRoadmap() {
         {/* Section Header */}
         <motion.div 
           className="text-center mb-20"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          transition={{ duration: 0.8, ease: [0.25, 0.25, 0, 1] }}
         >
           <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
             <span className="block bg-gradient-to-r from-[#323e65] to-[#a7bfd9] bg-clip-text text-transparent">
@@ -80,22 +82,23 @@ export function TimelineRoadmap() {
         {/* Timeline Container */}
         <div className="relative">
           {/* Animated Central Line */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 w-1 bg-muted/30 h-full">
+          <div className="absolute left-1/2 transform -translate-x-1/2 w-1 bg-muted/20 h-full">
             <motion.div
-              className="w-full bg-gradient-to-b from-[#6366f1] via-[#8b5cf6] to-[#06b6d4] rounded-full shadow-lg"
+              className="w-full bg-gradient-to-b from-[#6366f1] via-[#8b5cf6] to-[#06b6d4] rounded-full shadow-lg origin-top"
               style={{ 
                 height: lineHeight,
-                opacity: lineOpacity
+                opacity: lineOpacity,
+                scaleY: lineScale
               }}
-              transition={{ duration: 0.1, ease: "easeOut" }}
             />
             
             {/* Glowing effect */}
             <motion.div
-              className="absolute inset-0 w-full bg-gradient-to-b from-[#6366f1]/30 via-[#8b5cf6]/30 to-[#06b6d4]/30 rounded-full blur-sm"
+              className="absolute inset-0 w-3 -left-1 bg-gradient-to-b from-[#6366f1]/20 via-[#8b5cf6]/20 to-[#06b6d4]/20 rounded-full blur-md origin-top"
               style={{ 
                 height: lineHeight,
-                opacity: lineOpacity
+                opacity: lineOpacity,
+                scaleY: lineScale
               }}
             />
           </div>
@@ -109,34 +112,55 @@ export function TimelineRoadmap() {
                 <motion.div
                   key={step.id}
                   className={`relative flex items-center ${isEven ? 'justify-start' : 'justify-end'}`}
-                  initial={{ opacity: 0, x: isEven ? -100 : 100 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
+                  initial={{ opacity: 0, y: 60 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-150px" }}
                   transition={{ 
                     duration: 0.8, 
-                    delay: index * 0.2,
-                    ease: "easeOut"
+                    delay: index * 0.15,
+                    ease: [0.25, 0.25, 0, 1]
                   }}
                 >
                   {/* Timeline Item */}
-                  <div className={`w-5/12 ${isEven ? 'pr-16' : 'pl-16'}`}>
+                  <div className={`w-5/12 ${isEven ? 'pr-20' : 'pl-20'}`}>
                     <motion.div
                       className="relative group"
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ duration: 0.3 }}
+                      whileHover={{ 
+                        scale: 1.03,
+                        y: -8
+                      }}
+                      transition={{ 
+                        duration: 0.3,
+                        ease: [0.25, 0.25, 0, 1]
+                      }}
                     >
                       {/* Card */}
-                      <div className="bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-8 shadow-xl group-hover:shadow-2xl transition-all duration-500">
-                        {/* Step Number */}
-                        <div className="flex items-center gap-4 mb-4">
-                          <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${step.color} flex items-center justify-center shadow-lg`}>
+                      <div className="bg-card/90 backdrop-blur-sm border border-border/50 rounded-2xl p-8 shadow-xl group-hover:shadow-2xl group-hover:border-border transition-all duration-500">
+                        {/* Step Number and Icon */}
+                        <div className="flex items-center gap-4 mb-6">
+                          <motion.div 
+                            className={`w-12 h-12 rounded-full bg-gradient-to-r ${step.color} flex items-center justify-center shadow-lg`}
+                            whileHover={{ 
+                              scale: 1.1,
+                              rotate: 360
+                            }}
+                            transition={{ 
+                              duration: 0.6,
+                              ease: [0.25, 0.25, 0, 1]
+                            }}
+                          >
                             <span className="text-white font-bold text-lg">{step.id}</span>
-                          </div>
-                          <step.icon className="h-8 w-8 text-muted-foreground group-hover:text-foreground transition-colors duration-300" />
+                          </motion.div>
+                          <motion.div
+                            whileHover={{ scale: 1.2, rotate: 12 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <step.icon className="h-8 w-8 text-muted-foreground group-hover:text-foreground transition-colors duration-300" />
+                          </motion.div>
                         </div>
 
                         {/* Content */}
-                        <h3 className="text-2xl font-bold mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-[#323e65] group-hover:to-[#a7bfd9] group-hover:bg-clip-text transition-all duration-300">
+                        <h3 className="text-2xl font-bold mb-4 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-[#323e65] group-hover:to-[#a7bfd9] group-hover:bg-clip-text transition-all duration-300">
                           {step.title}
                         </h3>
                         <p className="text-lg text-muted-foreground mb-4 leading-relaxed">
@@ -148,21 +172,9 @@ export function TimelineRoadmap() {
 
                         {/* Hover gradient overlay */}
                         <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${step.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500 pointer-events-none`} />
-                      </div>
-
-                      {/* Connection Line to Center */}
-                      <div className={`absolute top-1/2 transform -translate-y-1/2 ${isEven ? '-right-16' : '-left-16'} w-16 h-0.5 bg-gradient-to-r from-border to-transparent`}>
-                        <motion.div
-                          className={`h-full bg-gradient-to-r ${step.color}`}
-                          initial={{ width: 0 }}
-                          whileInView={{ width: "100%" }}
-                          viewport={{ once: true }}
-                          transition={{ 
-                            duration: 0.8, 
-                            delay: index * 0.2 + 0.4,
-                            ease: "easeOut"
-                          }}
-                        />
+                        
+                        {/* Subtle border glow on hover */}
+                        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${step.color} opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 pointer-events-none`} />
                       </div>
                     </motion.div>
                   </div>
@@ -172,16 +184,33 @@ export function TimelineRoadmap() {
                     className="absolute left-1/2 transform -translate-x-1/2 z-10"
                     initial={{ scale: 0, opacity: 0 }}
                     whileInView={{ scale: 1, opacity: 1 }}
-                    viewport={{ once: true }}
+                    viewport={{ once: true, margin: "-150px" }}
                     transition={{ 
                       duration: 0.6, 
-                      delay: index * 0.2 + 0.6,
+                      delay: index * 0.15 + 0.3,
                       type: "spring",
-                      stiffness: 200
+                      stiffness: 300,
+                      damping: 25
+                    }}
+                    whileHover={{
+                      scale: 1.3,
+                      transition: { duration: 0.2 }
                     }}
                   >
-                    <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${step.color} shadow-lg border-4 border-background`}>
-                      <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${step.color} blur-md opacity-50 animate-pulse`} />
+                    <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${step.color} shadow-lg border-4 border-background relative`}>
+                      {/* Pulsing ring effect */}
+                      <motion.div 
+                        className={`absolute inset-0 rounded-full bg-gradient-to-r ${step.color}`}
+                        animate={{
+                          scale: [1, 1.5, 1],
+                          opacity: [0.5, 0, 0.5]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
                     </div>
                   </motion.div>
                 </motion.div>
@@ -192,19 +221,32 @@ export function TimelineRoadmap() {
           {/* Bottom completion indicator */}
           <motion.div
             className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 z-10"
-            initial={{ scale: 0, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
+            initial={{ scale: 0, opacity: 0, y: 30 }}
+            whileInView={{ scale: 1, opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ 
-              duration: 0.6, 
-              delay: 1.5,
+              duration: 0.8, 
+              delay: 0.5,
               type: "spring",
-              stiffness: 200
+              stiffness: 200,
+              damping: 20
             }}
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg border-4 border-background">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg border-4 border-background relative">
               <CheckCircle className="h-4 w-4 text-white" />
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 blur-md opacity-50 animate-pulse" />
+              {/* Celebratory pulse effect */}
+              <motion.div 
+                className="absolute inset-0 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"
+                animate={{
+                  scale: [1, 1.8, 1],
+                  opacity: [0.6, 0, 0.6]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
             </div>
           </motion.div>
         </div>
@@ -212,10 +254,10 @@ export function TimelineRoadmap() {
         {/* Call to Action */}
         <motion.div
           className="text-center mt-20"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.5 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.25, 0, 1] }}
         >
           <motion.div
             animate={{ y: [0, -8, 0] }}
@@ -223,7 +265,7 @@ export function TimelineRoadmap() {
           >
             <ArrowDown className="h-8 w-8 text-muted-foreground/50 mx-auto mb-4" />
           </motion.div>
-          <h3 className="text-2xl font-bold mb-4">
+          <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-[#323e65] to-[#a7bfd9] bg-clip-text text-transparent">
             Ready to start your learning journey?
           </h3>
           <p className="text-muted-foreground">
