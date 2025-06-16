@@ -5,6 +5,7 @@ import { TextInputField } from './text-input-field'
 import { DepthSelector } from './depth-selector'
 import { NavigationButtons } from './navigation-buttons'
 import { TopicCarousel } from './topic-carousel'
+import { ContextCarousel } from './context-carousel'
 import { dbOperations } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 
@@ -128,6 +129,12 @@ export function CourseForm() {
     }
   }
 
+  const handleContextSelect = (context: string) => {
+    if (currentStep === 2) {
+      handleInputChange('context', context)
+    }
+  }
+
   const canProceed = () => {
     switch (currentStep) {
       case 1:
@@ -189,6 +196,14 @@ export function CourseForm() {
               <TopicCarousel 
                 onTopicSelect={handleTopicSelect}
                 isActive={currentStep === 1}
+              />
+            )}
+
+            {/* Context Carousel - Only show on step 2 */}
+            {currentStep === 2 && (
+              <ContextCarousel 
+                onContextSelect={handleContextSelect}
+                isActive={currentStep === 2}
               />
             )}
 
