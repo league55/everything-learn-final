@@ -39,13 +39,13 @@ export function LandingPage() {
         
         {/* Scroll Indicator */}
         <motion.div
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10"
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2, duration: 0.8 }}
         >
           <motion.div
-            className="flex flex-col items-center gap-2 text-muted-foreground cursor-pointer group"
+            className="flex flex-col items-center gap-2 text-muted-foreground cursor-pointer group text-center"
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             onClick={() => {
