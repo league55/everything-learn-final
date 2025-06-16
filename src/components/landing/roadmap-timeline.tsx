@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { useRef } from 'react'
+import { motion, useScroll, useTransform, useInView } from 'framer-motion'
 import { 
   Sparkles, 
   BookOpen, 
@@ -7,8 +7,7 @@ import {
   Video,
   ArrowRight,
   Zap,
-  Brain,
-  Users
+  Brain
 } from 'lucide-react'
 
 interface RoadmapStep {
@@ -70,15 +69,168 @@ const roadmapSteps: RoadmapStep[] = [
   }
 ]
 
+function RoadmapStepComponent({ step, index }: { step: RoadmapStep; index: number }) {
+  const stepRef = useRef<HTMLDivElement>(null)
+  const isInView = useInView(stepRef, { once: true, margin: "-100px" })
+
+  return (
+    <motion.div
+      ref={stepRef}
+      initial={{ opacity: 0, y: 60 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 60 }}
+      transition={{ duration: 0.8, delay: index * 0.2, ease: "easeOut" }}
+      className={`relative flex items-center ${
+        index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'
+      }`}
+    >
+      {/* Step Content Card */}
+      <div className={`w-5/12 ${index % 2 === 0 ? 'pr-8' : 'pl-8'}`}>
+        <motion.div
+          whileHover={{ 
+            scale: 1.03,
+            rotateY: index % 2 === 0 ? 8 : -8,
+            rotateX: 3
+          }}
+          transition={{ type: "spring", stiffness: 200, damping: 20 }}
+          className="relative group cursor-pointer"
+          style={{ 
+            perspective: "1000px",
+            transformStyle: "preserve-3d"
+          }}
+        >
+          {/* 3D Card */}
+          <div className="relative bg-background/10 backdrop-blur-sm border border-background/20 rounded-2xl p-8 shadow-2xl hover:shadow-primary/20 transition-all duration-700">
+            {/* Slow Pulse Animation Ring - Fixed timing */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 to-accent/30 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+              <div className="w-full h-full rounded-2xl animate-pulse" style={{ animationDuration: '3s' }} />
+            </div>
+            
+            {/* Card Content */}
+            <div className="relative z-10">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="relative">
+                  {/* Slow Rotating Progress Ring - Fixed to be circular */}
+                  <div 
+                    className="absolute inset-0 w-12 h-12 rounded-full border-2 border-transparent bg-gradient-to-r from-primary/40 to-accent/40 group-hover:animate-spin"
+                    style={{ 
+                      animationDuration: '4s',
+                      mask: 'radial-gradient(circle at center, transparent 18px, black 20px)',
+                      WebkitMask: 'radial-gradient(circle at center, transparent 18px, black 20px)'
+                    }}
+                  />
+                  {/* Fixed circular icon container */}
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shadow-lg">
+                    <step.icon className="h-6 w-6 text-background" />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-background/60">Step {step.id}</span>
+                  <h3 className="text-2xl font-bold text-background">{step.title}</h3>
+                </div>
+              </div>
+              
+              <p className="text-background/80 mb-6 leading-relaxed">
+                {step.description}
+              </p>
+              
+              {/* Details List with staggered animation */}
+              <ul className="space-y-2">
+                {step.details.map((detail, detailIndex) => (
+                  <motion.li
+                    key={detailIndex}
+                    initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
+                    animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
+                    transition={{ 
+                      delay: 0.5 + index * 0.2 + detailIndex * 0.1,
+                      duration: 0.6,
+                      ease: "easeOut"
+                    }}
+                    className="flex items-center gap-3 text-background/70"
+                  >
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />
+                    <span className="text-sm">{detail}</span>
+                  </motion.li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Subtle Hover Glow Effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Central Number Badge */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 z-20">
+        <motion.div
+          initial={{ scale: 0, rotate: -180 }}
+          animate={isInView ? { scale: 1, rotate: 0 } : { scale: 0, rotate: -180 }}
+          transition={{ 
+            delay: index * 0.2 + 0.3,
+            duration: 0.8,
+            type: "spring",
+            stiffness: 200,
+            damping: 15
+          }}
+          whileHover={{ scale: 1.15, rotate: 360 }}
+          className="relative"
+        >
+          {/* Slow Outer Pulse Ring */}
+          <div 
+            className="absolute -inset-3 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full animate-pulse"
+            style={{ animationDuration: '4s' }}
+          />
+          
+          {/* Main Badge - Fixed to be perfectly circular */}
+          <div className="relative w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shadow-2xl border-4 border-background/20">
+            <span className="text-2xl font-bold text-background">{step.id}</span>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Arrow Connector (except for last step) */}
+      {index < roadmapSteps.length - 1 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0, rotate: index % 2 === 0 ? 0 : 90 }}
+          animate={isInView ? { 
+            opacity: 1, 
+            scale: 1, 
+            rotate: index % 2 === 0 ? 45 : -45 
+          } : { 
+            opacity: 0, 
+            scale: 0, 
+            rotate: index % 2 === 0 ? 0 : 90 
+          }}
+          transition={{ 
+            delay: index * 0.2 + 0.8,
+            duration: 0.6,
+            type: "spring",
+            stiffness: 200
+          }}
+          className="absolute top-full left-1/2 transform -translate-x-1/2 mt-8"
+        >
+          <ArrowRight className="h-6 w-6 text-primary/60" />
+        </motion.div>
+      )}
+
+      {/* Empty space for alternating layout */}
+      <div className="w-5/12" />
+    </motion.div>
+  )
+}
+
 export function RoadmapTimeline() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const timelineRef = useRef<HTMLDivElement>(null)
+  
+  // Fixed scroll progress tracking for the entire roadmap section
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start end", "end start"]
+    offset: ["start center", "end center"]
   })
 
-  // Transform scroll progress to line height (0% to 100%)
-  const lineHeight = useTransform(scrollYProgress, [0.1, 0.9], ["0%", "100%"])
+  // Transform scroll progress to line height with better easing
+  const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"])
 
   return (
     <section 
@@ -93,9 +245,9 @@ export function RoadmapTimeline() {
       <div className="relative max-w-6xl mx-auto px-6">
         {/* Section Header */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           viewport={{ once: true }}
           className="text-center mb-16"
         >
@@ -108,11 +260,11 @@ export function RoadmapTimeline() {
         </motion.div>
 
         {/* Timeline Container */}
-        <div className="relative">
-          {/* Central Growing Line */}
+        <div ref={timelineRef} className="relative">
+          {/* Central Growing Line - Fixed positioning and animation */}
           <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-background/20 transform -translate-x-1/2">
             <motion.div 
-              className="w-full bg-gradient-to-b from-primary via-accent to-primary rounded-full shadow-lg shadow-primary/50"
+              className="w-full bg-gradient-to-b from-primary via-accent to-primary rounded-full shadow-lg shadow-primary/50 origin-top"
               style={{ height: lineHeight }}
               initial={{ height: "0%" }}
             />
@@ -121,130 +273,28 @@ export function RoadmapTimeline() {
           {/* Timeline Steps */}
           <div className="space-y-24">
             {roadmapSteps.map((step, index) => (
-              <motion.div
-                key={step.id}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true, margin: "-100px" }}
-                className={`relative flex items-center ${
-                  index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'
-                }`}
-              >
-                {/* Step Content Card */}
-                <div className={`w-5/12 ${index % 2 === 0 ? 'pr-8' : 'pl-8'}`}>
-                  <motion.div
-                    whileHover={{ 
-                      scale: 1.02,
-                      rotateY: index % 2 === 0 ? 5 : -5,
-                      rotateX: 2
-                    }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    className="relative group"
-                    style={{ 
-                      perspective: "1000px",
-                      transformStyle: "preserve-3d"
-                    }}
-                  >
-                    {/* 3D Card */}
-                    <div className="relative bg-background/10 backdrop-blur-sm border border-background/20 rounded-2xl p-8 shadow-2xl hover:shadow-primary/20 transition-all duration-500">
-                      {/* Pulse Animation Ring */}
-                      <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-accent/50 rounded-2xl opacity-0 group-hover:opacity-100 animate-pulse transition-opacity duration-500" />
-                      
-                      {/* Card Content */}
-                      <div className="relative z-10">
-                        <div className="flex items-center gap-4 mb-4">
-                          <div className="relative">
-                            {/* Rotating Progress Ring */}
-                            <div className="absolute inset-0 w-12 h-12 border-2 border-primary/30 rounded-full animate-spin" />
-                            <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shadow-lg">
-                              <step.icon className="h-6 w-6 text-background" />
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium text-background/60">Step {step.id}</span>
-                            <h3 className="text-2xl font-bold text-background">{step.title}</h3>
-                          </div>
-                        </div>
-                        
-                        <p className="text-background/80 mb-6 leading-relaxed">
-                          {step.description}
-                        </p>
-                        
-                        {/* Details List */}
-                        <ul className="space-y-2">
-                          {step.details.map((detail, detailIndex) => (
-                            <motion.li
-                              key={detailIndex}
-                              initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-                              whileInView={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.3 + detailIndex * 0.1 }}
-                              className="flex items-center gap-3 text-background/70"
-                            >
-                              <div className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />
-                              <span className="text-sm">{detail}</span>
-                            </motion.li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Hover Glow Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Central Number Badge */}
-                <div className="absolute left-1/2 transform -translate-x-1/2 z-20">
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 360 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                    className="relative"
-                  >
-                    {/* Outer Pulse Ring */}
-                    <div className="absolute -inset-2 bg-gradient-to-r from-primary to-accent rounded-full animate-pulse opacity-50" />
-                    
-                    {/* Main Badge */}
-                    <div className="relative w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shadow-2xl border-4 border-background/20">
-                      <span className="text-2xl font-bold text-background">{step.id}</span>
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Arrow Connector (except for last step) */}
-                {index < roadmapSteps.length - 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
-                    className={`absolute top-full left-1/2 transform -translate-x-1/2 mt-8 ${
-                      index % 2 === 0 ? 'rotate-45' : '-rotate-45'
-                    }`}
-                  >
-                    <ArrowRight className="h-6 w-6 text-primary/60" />
-                  </motion.div>
-                )}
-
-                {/* Empty space for alternating layout */}
-                <div className="w-5/12" />
-              </motion.div>
+              <RoadmapStepComponent key={step.id} step={step} index={index} />
             ))}
           </div>
         </div>
 
         {/* Bottom CTA */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
           viewport={{ once: true }}
           className="text-center mt-20"
         >
-          <div className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-accent rounded-full text-background font-semibold shadow-2xl hover:shadow-primary/30 transition-all duration-300 hover:scale-105">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-accent rounded-full text-background font-semibold shadow-2xl hover:shadow-primary/30 transition-all duration-300 cursor-pointer"
+          >
             <Zap className="h-5 w-5" />
             <span>Start Your Journey Today</span>
             <Brain className="h-5 w-5" />
-          </div>
+          </motion.div>
         </motion.div>
       </div>
     </section>
