@@ -59,6 +59,11 @@ export function TimelineRoadmap() {
   const lineProgress = useTransform(scrollYProgress, [0, 1], [0, 1])
   const lineOpacity = useTransform(scrollYProgress, [0, 0.05], [0, 1])
   
+  // Dynamic glow effects based on scroll progress
+  const glowOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.3, 0.6, 0.9, 1])
+  const glowScale = useTransform(scrollYProgress, [0, 1], [1, 1.5])
+  const glowBlur = useTransform(scrollYProgress, [0, 1], [4, 12])
+  
   return (
     <section ref={containerRef} className="relative py-24 bg-gradient-to-b from-background to-muted/20">
       <div className="max-w-6xl mx-auto px-6">
@@ -96,8 +101,59 @@ export function TimelineRoadmap() {
                 originY: 0
               }}
             >
-              {/* Glowing effect */}
-              <div className="absolute inset-0 bg-gradient-to-b from-[#6366f1]/40 via-[#8b5cf6]/40 via-[#ec4899]/40 to-[#10b981]/40 blur-sm" />
+              {/* Primary Glow Effect */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-b from-[#6366f1]/60 via-[#8b5cf6]/60 via-[#ec4899]/60 to-[#10b981]/60"
+                style={{
+                  opacity: glowOpacity,
+                  scale: glowScale,
+                  filter: `blur(${glowBlur}px)`
+                }}
+                animate={{
+                  opacity: [0.6, 1, 0.6],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+              
+              {/* Secondary Glow Layer for Extra Intensity */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-b from-[#6366f1]/40 via-[#8b5cf6]/40 via-[#ec4899]/40 to-[#10b981]/40"
+                style={{
+                  opacity: glowOpacity,
+                  scale: useTransform(scrollYProgress, [0, 1], [1.2, 2]),
+                  filter: `blur(${useTransform(scrollYProgress, [0, 1], [8, 20])}px)`
+                }}
+                animate={{
+                  opacity: [0.3, 0.7, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+              
+              {/* Tertiary Outer Glow */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-b from-[#6366f1]/20 via-[#8b5cf6]/20 via-[#ec4899]/20 to-[#10b981]/20"
+                style={{
+                  opacity: useTransform(scrollYProgress, [0, 0.5, 1], [0, 0.3, 0.6]),
+                  scale: useTransform(scrollYProgress, [0, 1], [1.5, 3]),
+                  filter: `blur(${useTransform(scrollYProgress, [0, 1], [16, 32])}px)`
+                }}
+                animate={{
+                  opacity: [0.2, 0.4, 0.2],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
               
               {/* Moving dot at the end of the line */}
               <motion.div
@@ -110,6 +166,25 @@ export function TimelineRoadmap() {
                 }}
                 transition={{
                   duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+              
+              {/* Glowing dot effect */}
+              <motion.div
+                className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white rounded-full"
+                style={{
+                  opacity: useTransform(scrollYProgress, [0, 1], [0, 0.8]),
+                  scale: useTransform(scrollYProgress, [0, 1], [1, 2]),
+                  filter: `blur(${useTransform(scrollYProgress, [0, 1], [2, 8])}px)`
+                }}
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{
+                  duration: 1.5,
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
