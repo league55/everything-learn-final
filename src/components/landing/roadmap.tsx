@@ -196,6 +196,10 @@ export function Roadmap() {
   // Transform scroll progress to line height
   const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <section 
       ref={containerRef}
@@ -275,15 +279,16 @@ export function Roadmap() {
           viewport={{ once: true }}
           className="text-center mt-20"
         >
-          <motion.div
+          <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white font-semibold shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 cursor-pointer"
+            onClick={scrollToTop}
+            className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white font-semibold shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 cursor-pointer border-0"
           >
             <Zap className="h-5 w-5" />
             <span>Start Your Journey Today</span>
             <Brain className="h-5 w-5" />
-          </motion.div>
+          </motion.button>
         </motion.div>
       </div>
     </section>
