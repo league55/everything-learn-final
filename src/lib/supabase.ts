@@ -244,14 +244,26 @@ export const dbOperations = {
     topic: string
     context: string
     depth: number
+    user_id?: string
   }): Promise<CourseConfiguration> {
+    let userId = data.user_id
+    
+    // If user_id is not provided, get it from the current session
+    if (!userId) {
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+      if (userError || !userData.user) {
+        throw new Error('User must be authenticated to create a course configuration')
+      }
+      userId = userData.user.id
+    }
+
     const { data: result, error } = await supabase
       .from('course_configuration')
       .insert({
         topic: data.topic,
         context: data.context,
         depth: data.depth,
-        user_id: (await supabase.auth.getUser()).data.user?.id
+        user_id: userId
       })
       .select()
       .single()
