@@ -7,7 +7,7 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
   return (
-    <div className="flex justify-center mb-8">
+    <div className="flex justify-center mb-2">
       <div className="flex space-x-2">
         {Array.from({ length: totalSteps }, (_, index) => {
           const step = index + 1

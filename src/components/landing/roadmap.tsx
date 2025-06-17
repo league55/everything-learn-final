@@ -11,6 +11,10 @@ import {
   CheckCircle
 } from 'lucide-react';
 
+interface RoadmapProps {
+  scrollRef: React.RefObject<HTMLElement>;
+}
+
 interface RoadmapStep {
   id: number;
   title: string;
@@ -183,13 +187,13 @@ function RoadmapStepComponent({ step, index }: { step: RoadmapStep; index: numbe
   );
 }
 
-export function Roadmap() {
+export function Roadmap({ scrollRef }: RoadmapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   
   // Track scroll progress through the roadmap section
   const { scrollYProgress } = useScroll({
-    target: containerRef,
+    target: scrollRef,
     offset: ["start center", "end center"]
   });
 
@@ -201,7 +205,7 @@ export function Roadmap() {
   };
 
   return (
-    <section 
+    <motion.div
       ref={containerRef}
       className="relative py-24 bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900 text-white overflow-hidden min-h-screen"
     >
@@ -291,6 +295,6 @@ export function Roadmap() {
           </motion.button>
         </motion.div>
       </div>
-    </section>
+    </motion.div>
   );
 }

@@ -114,7 +114,7 @@ export function TextInputField({
   }
 
   return (
-    <div className="max-w-2xl mx-auto mb-12">
+    <div className="max-w-2xl mx-auto mb-4">
       <div 
         className="relative group cursor-text"
         onMouseEnter={handleMouseEnter}

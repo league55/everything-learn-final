@@ -25,7 +25,7 @@ export function FormHeader({ header, subheader, isTransitioning, slideDirection 
 
       {/* Subheader */}
       {subheader && (
-        <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+        <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
           {subheader}
         </p>
       )}
