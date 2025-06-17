@@ -43,7 +43,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const courseConfig = await dbOperations.createCourseConfiguration({
         topic: pendingCourse.topic.trim(),
         context: pendingCourse.context.trim(),
-        depth: pendingCourse.depth
+        depth: pendingCourse.depth,
+        user_id: authenticatedUser.id
       })
 
       // Create initial syllabus record and enqueue generation job
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Automatically enroll the course creator
       try {
-        await dbOperations.enrollInCourse(courseConfig.id)
+        await dbOperations.enrollInCourse(courseConfig.id, authenticatedUser.id)
         console.log('Course creator automatically enrolled in course:', courseConfig.id)
       } catch (enrollError) {
         console.warn('Failed to auto-enroll course creator, but course was created successfully:', enrollError)

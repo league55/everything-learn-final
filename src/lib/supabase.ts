@@ -244,6 +244,7 @@ export const dbOperations = {
     topic: string
     context: string
     depth: number
+    user_id: string
   }): Promise<CourseConfiguration> {
     const { data: result, error } = await supabase
       .from('course_configuration')
@@ -251,7 +252,7 @@ export const dbOperations = {
         topic: data.topic,
         context: data.context,
         depth: data.depth,
-        user_id: (await supabase.auth.getUser()).data.user?.id
+        user_id: data.user_id
       })
       .select()
       .single()
@@ -377,12 +378,12 @@ export const dbOperations = {
   },
 
   // Enroll user in a course
-  async enrollInCourse(courseConfigurationId: string): Promise<UserEnrollment> {
+  async enrollInCourse(courseConfigurationId: string, userId: string): Promise<UserEnrollment> {
     const { data, error } = await supabase
       .from('user_enrollments')
       .insert({
         course_configuration_id: courseConfigurationId,
-        user_id: (await supabase.auth.getUser()).data.user?.id
+        user_id: userId
       })
       .select()
       .single()

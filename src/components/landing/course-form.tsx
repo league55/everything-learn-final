@@ -56,13 +56,14 @@ export function CourseForm() {
 
   const currentStepData = steps[currentStep - 1]
 
-  const handleSubmitCourse = async (courseData: CourseForm) => {
+  const handleSubmitCourse = async (courseData: CourseForm, userId: string) => {
     try {
       // Create course configuration
       const courseConfig = await dbOperations.createCourseConfiguration({
         topic: courseData.topic.trim(),
         context: courseData.context.trim(),
-        depth: courseData.depth
+        depth: courseData.depth,
+        user_id: userId
       })
 
       // Create initial syllabus record and enqueue generation job
@@ -70,7 +71,7 @@ export function CourseForm() {
 
       // Automatically enroll the course creator
       try {
-        await dbOperations.enrollInCourse(courseConfig.id)
+        await dbOperations.enrollInCourse(courseConfig.id, userId)
         console.log('Course creator automatically enrolled in course:', courseConfig.id)
       } catch (enrollError) {
         console.warn('Failed to auto-enroll course creator, but course was created successfully:', enrollError)
@@ -121,7 +122,7 @@ export function CourseForm() {
       }
 
       // User is authenticated, submit course immediately
-      await handleSubmitCourse(formData)
+      await handleSubmitCourse(formData, user.id)
 
       // Reset form
       setFormData({
