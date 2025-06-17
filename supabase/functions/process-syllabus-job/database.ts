@@ -122,4 +122,34 @@ export class DatabaseService {
       throw new Error(`Failed to update syllabus status: ${error.message}`)
     }
   }
+
+  async createContentGenerationJob(
+    courseId: string,
+    moduleIndex: number,
+    topicIndex: number,
+    prompt: string
+  ): Promise<string> {
+    console.log('Creating content generation job for course:', courseId, 'module:', moduleIndex, 'topic:', topicIndex)
+    
+    const { data, error } = await this.supabase
+      .from('content_generation_jobs')
+      .insert({
+        course_configuration_id: courseId,
+        module_index: moduleIndex,
+        topic_index: topicIndex,
+        content_type: 'text',
+        prompt: prompt,
+        status: 'pending'
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating content generation job:', error)
+      throw new Error(`Failed to create content generation job: ${error.message}`)
+    }
+
+    console.log('Created content generation job:', data.id)
+    return data.id
+  }
 }

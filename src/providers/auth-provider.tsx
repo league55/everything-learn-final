@@ -2,6 +2,9 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { authStorage } from '@/lib/auth-storage'
+import { courseStorage } from '@/lib/course-storage'
+import { dbOperations } from '@/lib/supabase'
+import { useToast } from '@/hooks/use-toast'
 
 interface AuthContextType {
   user: User | null
@@ -20,6 +23,55 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasProcessedPendingCourse, setHasProcessedPendingCourse] = useState(false)
+  const { toast } = useToast()
+
+  // Handle pending course submission after authentication
+  const handlePendingCourse = async (authenticatedUser: User) => {
+    if (hasProcessedPendingCourse) return
+
+    const pendingCourse = courseStorage.getPendingCourse()
+    if (!pendingCourse) {
+      setHasProcessedPendingCourse(true)
+      return
+    }
+
+    try {
+      console.log('Processing pending course for authenticated user:', authenticatedUser.email)
+      
+      // Create course configuration
+      const courseConfig = await dbOperations.createCourseConfiguration({
+        topic: pendingCourse.topic.trim(),
+        context: pendingCourse.context.trim(),
+        depth: pendingCourse.depth
+      })
+
+      // Create initial syllabus record and enqueue generation job
+      await dbOperations.createSyllabus(courseConfig.id)
+
+      // Clear pending course data
+      courseStorage.clearPendingCourse()
+
+      toast({
+        title: "Course Generation Started!",
+        description: `Your course "${pendingCourse.topic}" is being generated. This might take a few minutes.`,
+        duration: 5000,
+      })
+
+      console.log('Pending course processed successfully:', courseConfig.id)
+      
+    } catch (error) {
+      console.error('Failed to process pending course:', error)
+      toast({
+        title: "Failed to Create Course",
+        description: "There was an issue creating your course. Please try again.",
+        variant: "destructive",
+        duration: 5000,
+      })
+    } finally {
+      setHasProcessedPendingCourse(true)
+    }
+  }
 
   useEffect(() => {
     console.log('AuthProvider mounted')
@@ -58,6 +110,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             } catch (error) {
               console.error('Error updating stored auth data:', error)
             }
+
+            // Handle pending course
+            await handlePendingCourse(initialSession.user)
           } else {
             console.log('No initial session found, checking stored auth data')
             // If no session from Supabase, try to get from stored auth data
@@ -69,10 +124,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
               })
               setSession(storedAuth.session)
               setUser(storedAuth.user)
+              
+              // Handle pending course
+              await handlePendingCourse(storedAuth.user)
             } else {
               console.log('No stored auth data found')
               setSession(null)
               setUser(null)
+              setHasProcessedPendingCourse(true)
             }
           }
           console.log('Setting loading to false after initial session check')
@@ -85,6 +144,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setSession(null)
           setUser(null)
           authStorage.clearStoredAuthData()
+          setHasProcessedPendingCourse(true)
           console.log('Setting loading to false after error')
           setLoading(false)
         }
@@ -124,11 +184,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
             } catch (error) {
               console.error('Error updating stored auth data:', error)
             }
+
+            // Handle pending course for new authentication
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              setHasProcessedPendingCourse(false)
+              await handlePendingCourse(session.user)
+            }
           } else {
             console.log('Clearing session and user after state change')
             setSession(null)
             setUser(null)
             authStorage.clearStoredAuthData()
+            setHasProcessedPendingCourse(false)
           }
         } catch (error) {
           console.error('Error processing auth state change:', error)
@@ -155,6 +222,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null)
       setSession(null)
       authStorage.clearStoredAuthData()
+      setHasProcessedPendingCourse(false)
       console.log('Local state cleared')
     } catch (error) {
       console.error('Error signing out:', error)
@@ -170,9 +238,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       hasUser: !!user,
       userEmail: user?.email,
       hasSession: !!session,
-      loading
+      loading,
+      hasProcessedPendingCourse
     })
-  }, [user, session, loading])
+  }, [user, session, loading, hasProcessedPendingCourse])
 
   const value = {
     user,

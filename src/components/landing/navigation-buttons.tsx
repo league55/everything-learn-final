@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ArrowRight, Loader2 } from 'lucide-react'
+import { ChevronLeft, ArrowRight, Loader2, LogIn } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface NavigationButtonsProps {
@@ -7,6 +7,7 @@ interface NavigationButtonsProps {
   totalSteps: number
   canProceed: boolean
   isSubmitting: boolean
+  isAuthenticated: boolean
   onBack: () => void
   onNext: () => void
 }
@@ -16,9 +17,13 @@ export function NavigationButtons({
   totalSteps, 
   canProceed, 
   isSubmitting, 
+  isAuthenticated,
   onBack, 
   onNext 
 }: NavigationButtonsProps) {
+  const isLastStep = currentStep === totalSteps
+  const needsAuth = isLastStep && !isAuthenticated
+
   return (
     <div className="flex justify-center items-center space-x-4">
       {currentStep > 1 && (
@@ -48,12 +53,23 @@ export function NavigationButtons({
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Creating Course...
+            {needsAuth ? 'Saving...' : 'Creating Course...'}
           </>
         ) : (
           <>
-            {currentStep === totalSteps ? 'Generate Course' : 'Continue'}
-            {currentStep < totalSteps && <ArrowRight className="ml-2 h-5 w-5" />}
+            {needsAuth ? (
+              <>
+                <LogIn className="mr-2 h-5 w-5" />
+                Sign In & Generate
+              </>
+            ) : isLastStep ? (
+              'Generate Course'
+            ) : (
+              <>
+                Continue
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </>
+            )}
           </>
         )}
       </Button>

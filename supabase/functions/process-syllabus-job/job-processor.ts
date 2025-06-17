@@ -57,6 +57,9 @@ export class JobProcessor {
 
       console.log(`Successfully generated syllabus for job: ${job.id}, course: ${courseConfig.topic}`)
 
+      // Schedule content generation for the first module
+      await this.scheduleFirstModuleContentGeneration(job.course_configuration_id, validatedSyllabus)
+
     } catch (error) {
       console.error('Error during job processing:', error)
       
@@ -72,6 +75,53 @@ export class JobProcessor {
       await this.db.updateSyllabusStatus(job.course_configuration_id, 'failed')
 
       throw error
+    }
+  }
+
+  private async scheduleFirstModuleContentGeneration(courseId: string, syllabus: any): Promise<void> {
+    console.log('Scheduling content generation for first module of course:', courseId)
+
+    try {
+      if (!syllabus.modules || syllabus.modules.length === 0) {
+        console.log('No modules found in syllabus, skipping content generation')
+        return
+      }
+
+      const firstModule = syllabus.modules[0]
+      if (!firstModule.topics || firstModule.topics.length === 0) {
+        console.log('No topics found in first module, skipping content generation')
+        return
+      }
+
+      // Create content generation jobs for each topic in the first module
+      const contentJobs = []
+      for (let topicIndex = 0; topicIndex < firstModule.topics.length; topicIndex++) {
+        const topic = firstModule.topics[topicIndex]
+        
+        const prompt = `Generate comprehensive learning content for this topic: ${topic.summary}
+
+Topic context: ${topic.content}
+Keywords: ${topic.keywords.join(', ')}
+
+Create detailed educational content that includes:
+- Clear explanations of key concepts
+- Practical examples and applications
+- Learning objectives
+- Real-world use cases
+- Interactive elements where appropriate
+
+The content should be engaging, well-structured, and appropriate for the course depth level.`
+
+        // Create content generation job
+        const jobId = await this.db.createContentGenerationJob(courseId, 0, topicIndex, prompt)
+        contentJobs.push(jobId)
+      }
+
+      console.log(`Successfully scheduled ${contentJobs.length} content generation jobs for first module`)
+
+    } catch (error) {
+      console.error('Error scheduling first module content generation:', error)
+      // Don't throw error - syllabus generation was successful, content generation is supplementary
     }
   }
 

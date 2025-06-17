@@ -286,7 +286,6 @@ export const dbOperations = {
         syllabus!inner(*),
         syllabus_generation_jobs(*)
       `)
-      .eq('syllabus.status', 'completed')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 

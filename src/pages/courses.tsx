@@ -2,6 +2,7 @@ import { useAuth } from '@/providers/auth-provider'
 import { CoursesHeader } from '@/components/courses/courses-header'
 import { EnrolledCoursesSection } from '@/components/courses/enrolled-courses-section'
 import { AllCoursesSection } from '@/components/courses/all-courses-section'
+import { PendingCourseBanner } from '@/components/courses/pending-course-banner'
 import { Loader2 } from 'lucide-react'
 
 export function CoursesPage() {
@@ -27,6 +28,9 @@ export function CoursesPage() {
           title="Course Library"
           description="Discover AI-powered courses and track your learning progress."
         />
+
+        {/* Pending Course Banner - Only show for authenticated users */}
+        {user && <PendingCourseBanner />}
 
         {/* Enrolled Courses Section - Only show for authenticated users */}
         {user && <EnrolledCoursesSection />}

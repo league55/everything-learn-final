@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { StepIndicator } from './step-indicator'
 import { FormHeader } from './form-header'
 import { TextInputField } from './text-input-field'
@@ -7,6 +8,8 @@ import { NavigationButtons } from './navigation-buttons'
 import { TopicCarousel } from './topic-carousel'
 import { ContextCarousel } from './context-carousel'
 import { dbOperations } from '@/lib/supabase'
+import { courseStorage } from '@/lib/course-storage'
+import { useAuth } from '@/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 
 interface CourseForm {
@@ -47,29 +50,69 @@ export function CourseForm() {
     depth: 3
   })
   
+  const { user } = useAuth()
   const { toast } = useToast()
+  const navigate = useNavigate()
 
   const currentStepData = steps[currentStep - 1]
+
+  const handleSubmitCourse = async (courseData: CourseForm) => {
+    try {
+      // Create course configuration
+      const courseConfig = await dbOperations.createCourseConfiguration({
+        topic: courseData.topic.trim(),
+        context: courseData.context.trim(),
+        depth: courseData.depth
+      })
+
+      // Create initial syllabus record and enqueue generation job
+      await dbOperations.createSyllabus(courseConfig.id)
+
+      // Clear any pending course data
+      courseStorage.clearPendingCourse()
+
+      toast({
+        title: "Course Generation Started!",
+        description: `Your course "${courseData.topic}" is being generated. This might take a few minutes.`,
+        duration: 5000,
+      })
+
+      // Navigate to courses page to show progress
+      navigate('/courses')
+
+    } catch (error) {
+      console.error('Failed to submit course:', error)
+      toast({
+        title: "Failed to Create Course",
+        description: error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+        duration: 5000,
+      })
+      throw error
+    }
+  }
 
   const handleSubmitForm = async () => {
     setIsSubmitting(true)
     
     try {
-      // Create course configuration
-      const courseConfig = await dbOperations.createCourseConfiguration({
-        topic: formData.topic.trim(),
-        context: formData.context.trim(),
-        depth: formData.depth
-      })
+      if (!user) {
+        // Store course data for after authentication
+        courseStorage.storePendingCourse(formData)
+        
+        toast({
+          title: "Sign in to Generate Course",
+          description: "Your course configuration has been saved. Please sign in to generate it.",
+          duration: 5000,
+        })
 
-      // Create initial syllabus record and enqueue generation job
-      const { syllabus, job } = await dbOperations.createSyllabus(courseConfig.id)
+        // Navigate to login
+        navigate('/login')
+        return
+      }
 
-      toast({
-        title: "Course Created Successfully!",
-        description: `Your course "${formData.topic}" is being generated. You can track its progress in the courses page.`,
-        duration: 5000,
-      })
+      // User is authenticated, submit course immediately
+      await handleSubmitCourse(formData)
 
       // Reset form
       setFormData({
@@ -80,13 +123,7 @@ export function CourseForm() {
       setCurrentStep(1)
 
     } catch (error) {
-      console.error('Failed to submit course:', error)
-      toast({
-        title: "Failed to Create Course",
-        description: error instanceof Error ? error.message : "Please try again later.",
-        variant: "destructive",
-        duration: 5000,
-      })
+      // Error handling is done in handleSubmitCourse
     } finally {
       setIsSubmitting(false)
     }
@@ -215,6 +252,7 @@ export function CourseForm() {
               isSubmitting={isSubmitting}
               onBack={handleBack}
               onNext={handleNext}
+              isAuthenticated={!!user}
             />
           </>
         )}
