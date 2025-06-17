@@ -39,12 +39,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       console.log('Processing pending course for authenticated user:', authenticatedUser.email)
       
-      // Create course configuration with the authenticated user's ID
+      // Create course configuration
       const courseConfig = await dbOperations.createCourseConfiguration({
         topic: pendingCourse.topic.trim(),
         context: pendingCourse.context.trim(),
-        depth: pendingCourse.depth,
-        user_id: authenticatedUser.id  // Pass the authenticated user's ID directly
+        depth: pendingCourse.depth
       })
 
       // Create initial syllabus record and enqueue generation job
