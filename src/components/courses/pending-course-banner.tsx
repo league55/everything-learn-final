@@ -35,13 +35,22 @@ export function PendingCourseBanner() {
       // Create initial syllabus record and enqueue generation job
       await dbOperations.createSyllabus(courseConfig.id)
 
+      // Automatically enroll the course creator
+      try {
+        await dbOperations.enrollInCourse(courseConfig.id)
+        console.log('Course creator automatically enrolled in course:', courseConfig.id)
+      } catch (enrollError) {
+        console.warn('Failed to auto-enroll course creator, but course was created successfully:', enrollError)
+        // Don't throw error - course creation was successful
+      }
+
       // Clear pending course data
       courseStorage.clearPendingCourse()
       setPendingCourse(null)
 
       toast({
-        title: "Course Generation Started!",
-        description: `Your course "${pendingCourse.topic}" is being generated.`,
+        title: "Course Created & Enrolled!",
+        description: `Your course "${pendingCourse.topic}" is being generated. You're automatically enrolled and can track progress.`,
         duration: 5000,
       })
 
@@ -87,7 +96,7 @@ export function PendingCourseBanner() {
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating...
+                Creating...
               </>
             ) : (
               'Generate Course'

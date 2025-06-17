@@ -49,12 +49,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Create initial syllabus record and enqueue generation job
       await dbOperations.createSyllabus(courseConfig.id)
 
+      // Automatically enroll the course creator
+      try {
+        await dbOperations.enrollInCourse(courseConfig.id)
+        console.log('Course creator automatically enrolled in course:', courseConfig.id)
+      } catch (enrollError) {
+        console.warn('Failed to auto-enroll course creator, but course was created successfully:', enrollError)
+        // Don't throw error - course creation was successful
+      }
+
       // Clear pending course data
       courseStorage.clearPendingCourse()
 
       toast({
-        title: "Course Generation Started!",
-        description: `Your course "${pendingCourse.topic}" is being generated. This might take a few minutes.`,
+        title: "Course Created & Enrolled!",
+        description: `Your course "${pendingCourse.topic}" is being generated. You're automatically enrolled and can track progress.`,
         duration: 5000,
       })
 

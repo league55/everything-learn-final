@@ -68,12 +68,21 @@ export function CourseForm() {
       // Create initial syllabus record and enqueue generation job
       await dbOperations.createSyllabus(courseConfig.id)
 
+      // Automatically enroll the course creator
+      try {
+        await dbOperations.enrollInCourse(courseConfig.id)
+        console.log('Course creator automatically enrolled in course:', courseConfig.id)
+      } catch (enrollError) {
+        console.warn('Failed to auto-enroll course creator, but course was created successfully:', enrollError)
+        // Don't throw error - course creation was successful
+      }
+
       // Clear any pending course data
       courseStorage.clearPendingCourse()
 
       toast({
-        title: "Course Generation Started!",
-        description: `Your course "${courseData.topic}" is being generated. This might take a few minutes.`,
+        title: "Course Created & Enrolled!",
+        description: `Your course "${courseData.topic}" is being generated. You're automatically enrolled and can track progress.`,
         duration: 5000,
       })
 
@@ -250,9 +259,9 @@ export function CourseForm() {
               totalSteps={3}
               canProceed={canProceed()}
               isSubmitting={isSubmitting}
+              isAuthenticated={!!user}
               onBack={handleBack}
               onNext={handleNext}
-              isAuthenticated={!!user}
             />
           </>
         )}
