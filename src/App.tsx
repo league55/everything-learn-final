@@ -14,7 +14,7 @@ import './App.css'
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="orion-ui-theme">
+    <ThemeProvider defaultTheme="light" storageKey="orion-ui-theme">
       <AuthProvider>
         <Router>
           <Routes>
