@@ -182,6 +182,13 @@ export function CourseCard({ course, onEnrollmentChange }: CourseCardProps) {
   const isFailed = course.generation_status === 'failed'
   const isCompleted = course.generation_status === 'completed'
 
+  // Add this debug logging
+  console.log('Course:', course.topic)
+  console.log('Syllabus:', course.syllabus)
+  console.log('Generation Job:', course.generation_job)
+  console.log('Syllabus status:', course.syllabus?.status)
+  console.log('Job status:', course.generation_job?.status)
+
   return (
     <Card className={cn(
       "overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col",
