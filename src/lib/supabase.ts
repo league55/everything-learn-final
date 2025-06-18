@@ -333,8 +333,8 @@ export const dbOperations = {
         ue => ue.course_configuration_id === course.id
       )
 
-      const syllabus = course.syllabus?.[0]
-      const generationJob = course.syllabus_generation_jobs?.[0]
+      const syllabus = course.syllabus
+      const generationJob = course.syllabus_generation_jobs
 
       // Determine generation status
       let generation_status: 'generating' | 'completed' | 'failed' = 'generating'
@@ -488,8 +488,8 @@ export const dbOperations = {
     if (!data) return []
 
     return data.map(enrollment => {
-      const syllabus = enrollment.syllabus?.syllabus?.[0]
-      const generationJob = enrollment.generation_jobs?.syllabus_generation_jobs?.[0]
+      const syllabus = enrollment.syllabus?.syllabus
+      const generationJob = enrollment.generation_jobs?.syllabus_generation_jobs
 
       // Determine generation status
       let generation_status: 'generating' | 'completed' | 'failed' = 'generating'

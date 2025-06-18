@@ -117,6 +117,8 @@ export function CourseCard({
     }
   }
 
+  
+
   return (
     <Card className={cn("overflow-hidden hover:shadow-lg transition-shadow", getCardStyles())}>
       <CardHeader className="pb-3">
