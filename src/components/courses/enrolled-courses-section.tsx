@@ -19,7 +19,9 @@ import {
   CheckCircle,
   ExternalLink,
   BookOpen,
-  Award
+  Award,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -91,6 +93,30 @@ export function EnrolledCoursesSection() {
     window.open(libraryUrl, '_blank')
   }
 
+  const handleRetryGeneration = async (courseId: string) => {
+    try {
+      await dbOperations.retryCourseGeneration(courseId)
+      
+      toast({
+        title: "Generation Retried",
+        description: "Course generation has been restarted. Please check back in a few minutes.",
+        duration: 5000,
+      })
+
+      // Reload courses
+      const userCourses = await dbOperations.getUserEnrolledCourses()
+      setEnrolledCourses(userCourses)
+    } catch (err) {
+      console.error('Failed to retry generation:', err)
+      toast({
+        title: "Retry Failed",
+        description: err instanceof Error ? err.message : "Please try again later.",
+        variant: "destructive",
+        duration: 3000,
+      })
+    }
+  }
+
   const activeCourses = enrolledCourses.filter(course => 
     course.user_enrollment?.status === 'active'
   )
@@ -98,6 +124,19 @@ export function EnrolledCoursesSection() {
   const completedCourses = enrolledCourses.filter(course => 
     course.user_enrollment?.status === 'completed'
   )
+
+  const generatingCourses = activeCourses.filter(course => 
+    course.generation_status === 'generating'
+  )
+
+  const readyCourses = activeCourses.filter(course => 
+    course.generation_status === 'completed'
+  )
+
+  const failedCourses = activeCourses.filter(course => 
+    course.generation_status === 'failed'
+  )
+
   // Don't show this section if user is not authenticated
   if (!user) {
     return null
@@ -165,10 +204,18 @@ export function EnrolledCoursesSection() {
         </Card>
       ) : (
         <Tabs defaultValue="active" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="active" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
-              Active ({activeCourses.length})
+              Ready ({readyCourses.length})
+            </TabsTrigger>
+            <TabsTrigger value="generating" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Generating ({generatingCourses.length})
+            </TabsTrigger>
+            <TabsTrigger value="failed" className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Failed ({failedCourses.length})
             </TabsTrigger>
             <TabsTrigger value="completed" className="flex items-center gap-2">
               <Award className="h-4 w-4" />
@@ -177,25 +224,25 @@ export function EnrolledCoursesSection() {
           </TabsList>
           
           <TabsContent value="active" className="mt-6">
-            {activeCourses.length === 0 ? (
+            {readyCourses.length === 0 ? (
               <Card className="border-dashed border-2 border-muted-foreground/25 bg-muted/5">
                 <CardHeader className="text-center py-8">
                   <div className="mx-auto h-12 w-12 bg-muted rounded-lg flex items-center justify-center mb-4">
                     <BookOpen className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <CardTitle className="text-xl text-muted-foreground">
-                    No active courses
+                    No ready courses
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center pb-8">
                   <p className="text-muted-foreground mb-4">
-                    Start learning by enrolling in a course below.
+                    Your enrolled courses are still being generated. Check the "Generating" tab for progress.
                   </p>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {activeCourses.map((course) => {
+                {readyCourses.map((course) => {
                   const progress = course.syllabus ? calculateProgress(course.user_enrollment, course.syllabus) : 0
                   
                   return (
@@ -255,6 +302,176 @@ export function EnrolledCoursesSection() {
                     </Card>
                   )
                 })}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="generating" className="mt-6">
+            {generatingCourses.length === 0 ? (
+              <Card className="border-dashed border-2 border-muted-foreground/25 bg-muted/5">
+                <CardHeader className="text-center py-8">
+                  <div className="mx-auto h-12 w-12 bg-muted rounded-lg flex items-center justify-center mb-4">
+                    <Clock className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <CardTitle className="text-xl text-muted-foreground">
+                    No courses generating
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center pb-8">
+                  <p className="text-muted-foreground mb-4">
+                    All your enrolled courses have finished generating.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                    <Clock className="h-5 w-5" />
+                    <span className="font-medium">Courses Being Generated</span>
+                  </div>
+                  <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
+                    These courses are currently being created. You'll be able to start learning once they're complete.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {generatingCourses.map((course) => (
+                    <Card key={course.id} className="overflow-hidden border-blue-200 dark:border-blue-800">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg line-clamp-2">
+                          {course.topic}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge 
+                            variant="secondary" 
+                            className={cn("text-xs", getDepthColor(course.depth))}
+                          >
+                            {getDepthLabel(course.depth)}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Generating
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {course.context}
+                        </p>
+                        
+                        {course.generation_progress !== undefined && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="font-medium text-blue-600 dark:text-blue-400">Generation Progress</span>
+                              <span className="text-blue-600 dark:text-blue-400">{course.generation_progress}%</span>
+                            </div>
+                            <Progress value={course.generation_progress} className="h-2" />
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            <span>Enrolled {formatDate(course.user_enrollment?.enrolled_at || '')}</span>
+                          </div>
+                        </div>
+
+                        <Button 
+                          variant="outline"
+                          className="w-full"
+                          disabled
+                        >
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating Course...
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="failed" className="mt-6">
+            {failedCourses.length === 0 ? (
+              <Card className="border-dashed border-2 border-muted-foreground/25 bg-muted/5">
+                <CardHeader className="text-center py-8">
+                  <div className="mx-auto h-12 w-12 bg-muted rounded-lg flex items-center justify-center mb-4">
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                  </div>
+                  <CardTitle className="text-xl text-muted-foreground">
+                    No failed generations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center pb-8">
+                  <p className="text-muted-foreground mb-4">
+                    All your course generations have been successful!
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                    <AlertCircle className="h-5 w-5" />
+                    <span className="font-medium">Failed Course Generations</span>
+                  </div>
+                  <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                    These courses failed to generate. You can retry the generation process.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {failedCourses.map((course) => (
+                    <Card key={course.id} className="overflow-hidden border-red-200 dark:border-red-800">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg line-clamp-2">
+                          {course.topic}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge 
+                            variant="secondary" 
+                            className={cn("text-xs", getDepthColor(course.depth))}
+                          >
+                            {getDepthLabel(course.depth)}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Failed
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {course.context}
+                        </p>
+                        
+                        {course.generation_error && (
+                          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                            <p className="text-sm text-red-700 dark:text-red-400">
+                              {course.generation_error}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            <span>Enrolled {formatDate(course.user_enrollment?.enrolled_at || '')}</span>
+                          </div>
+                        </div>
+
+                        <Button 
+                          variant="outline"
+                          className="w-full border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
+                          onClick={() => handleRetryGeneration(course.id)}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Retry Generation
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
             )}
           </TabsContent>

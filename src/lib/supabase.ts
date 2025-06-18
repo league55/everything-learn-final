@@ -226,6 +226,10 @@ export interface CourseWithDetails extends CourseConfiguration {
   enrollment_count?: number
   user_enrollment?: UserEnrollment
   content_items?: ContentItem[]
+  generation_status: 'generating' | 'completed' | 'failed'
+  generation_progress?: number
+  estimated_completion?: string
+  generation_error?: string
 }
 
 // Storage bucket names
@@ -277,16 +281,15 @@ export const dbOperations = {
     return data || []
   },
 
-  // Get all public courses (for course discovery)
+  // Get all courses (including generating ones)
   async getAllCourses(limit = 50, offset = 0): Promise<CourseWithDetails[]> {
     const { data: courses, error: coursesError } = await supabase
       .from('course_configuration')
       .select(`
         *,
-        syllabus!inner(*),
+        syllabus(*),
         syllabus_generation_jobs(*)
       `)
-      .eq('syllabus.status', 'completed')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -320,7 +323,7 @@ export const dbOperations = {
       console.warn('Failed to fetch user enrollments:', enrollmentError)
     }
 
-    // Combine data
+    // Combine data and determine generation status
     return courses.map(course => {
       const enrollmentCount = enrollmentCounts?.filter(
         ec => ec.course_configuration_id === course.id
@@ -330,17 +333,142 @@ export const dbOperations = {
         ue => ue.course_configuration_id === course.id
       )
 
+      const syllabus = course.syllabus?.[0]
+      const generationJob = course.syllabus_generation_jobs?.[0]
+
+      // Determine generation status
+      let generation_status: 'generating' | 'completed' | 'failed' = 'generating'
+      let generation_error: string | undefined
+      let generation_progress: number | undefined
+
+      if (syllabus) {
+        if (syllabus.status === 'completed') {
+          generation_status = 'completed'
+        } else if (syllabus.status === 'failed') {
+          generation_status = 'failed'
+          generation_error = generationJob?.error_message || 'Generation failed'
+        } else {
+          generation_status = 'generating'
+          // Calculate rough progress based on job status
+          if (generationJob?.status === 'processing') {
+            generation_progress = 50
+          } else if (generationJob?.status === 'pending') {
+            generation_progress = 10
+          }
+        }
+      } else if (generationJob) {
+        if (generationJob.status === 'failed') {
+          generation_status = 'failed'
+          generation_error = generationJob.error_message || 'Generation failed'
+        } else {
+          generation_status = 'generating'
+          generation_progress = generationJob.status === 'processing' ? 50 : 10
+        }
+      }
+
       return {
         ...course,
-        syllabus: course.syllabus?.[0],
-        generation_job: course.syllabus_generation_jobs?.[0],
+        syllabus,
+        generation_job: generationJob,
         enrollment_count: enrollmentCount,
-        user_enrollment: userEnrollment
+        user_enrollment: userEnrollment,
+        generation_status,
+        generation_progress,
+        generation_error
       }
     })
   },
 
-  // Get user's enrolled courses with progress
+  // Get only completed courses (for backward compatibility)
+  async getCompletedCourses(limit = 50, offset = 0): Promise<CourseWithDetails[]> {
+    const allCourses = await this.getAllCourses(limit, offset)
+    return allCourses.filter(course => course.generation_status === 'completed')
+  },
+
+  // Get only generating courses
+  async getGeneratingCourses(limit = 50, offset = 0): Promise<CourseWithDetails[]> {
+    const allCourses = await this.getAllCourses(limit, offset)
+    return allCourses.filter(course => course.generation_status === 'generating')
+  },
+
+  // Get course generation status
+  async getCourseGenerationStatus(courseId: string): Promise<{
+    status: 'generating' | 'completed' | 'failed'
+    progress?: number
+    error?: string
+  }> {
+    const { data: syllabus } = await supabase
+      .from('syllabus')
+      .select('status')
+      .eq('course_configuration_id', courseId)
+      .single()
+
+    const { data: job } = await supabase
+      .from('syllabus_generation_jobs')
+      .select('status, error_message')
+      .eq('course_configuration_id', courseId)
+      .single()
+
+    if (syllabus?.status === 'completed') {
+      return { status: 'completed' }
+    } else if (syllabus?.status === 'failed' || job?.status === 'failed') {
+      return { 
+        status: 'failed', 
+        error: job?.error_message || 'Generation failed' 
+      }
+    } else {
+      return { 
+        status: 'generating', 
+        progress: job?.status === 'processing' ? 50 : 10 
+      }
+    }
+  },
+
+  // Retry course generation
+  async retryCourseGeneration(courseId: string): Promise<SyllabusGenerationJob> {
+    // Get the existing job
+    const { data: existingJob, error: fetchError } = await supabase
+      .from('syllabus_generation_jobs')
+      .select('*')
+      .eq('course_configuration_id', courseId)
+      .single()
+
+    if (fetchError) {
+      throw new Error(`Failed to fetch existing job: ${fetchError.message}`)
+    }
+
+    // Check if we can retry
+    if (existingJob.retries >= existingJob.max_retries) {
+      throw new Error(`Maximum retries (${existingJob.max_retries}) exceeded for this job`)
+    }
+
+    // Reset job to pending status for retry
+    const { data: retriedJob, error: retryError } = await supabase
+      .from('syllabus_generation_jobs')
+      .update({
+        status: 'pending',
+        error_message: null,
+        started_at: null,
+        completed_at: null
+      })
+      .eq('id', existingJob.id)
+      .select()
+      .single()
+
+    if (retryError) {
+      throw new Error(`Failed to retry generation job: ${retryError.message}`)
+    }
+
+    // Also update syllabus status
+    await supabase
+      .from('syllabus')
+      .update({ status: 'generating' })
+      .eq('course_configuration_id', courseId)
+
+    return retriedJob
+  },
+
+  // Get user's enrolled courses with progress (including generating ones)
   async getUserEnrolledCourses(): Promise<CourseWithDetails[]> {
     const { data, error } = await supabase
       .from('user_enrollments')
@@ -350,7 +478,7 @@ export const dbOperations = {
         syllabus:course_configuration!inner(syllabus(*)),
         generation_jobs:course_configuration!inner(syllabus_generation_jobs(*))
       `)
-      .eq('status', 'active')
+      .in('status', ['active', 'completed'])
       .order('enrolled_at', { ascending: false })
 
     if (error) {
@@ -359,22 +487,59 @@ export const dbOperations = {
 
     if (!data) return []
 
-    return data.map(enrollment => ({
-      ...enrollment.course_configuration,
-      syllabus: enrollment.syllabus?.syllabus?.[0],
-      generation_job: enrollment.generation_jobs?.syllabus_generation_jobs?.[0],
-      user_enrollment: {
-        id: enrollment.id,
-        user_id: enrollment.user_id,
-        course_configuration_id: enrollment.course_configuration_id,
-        enrolled_at: enrollment.enrolled_at,
-        current_module_index: enrollment.current_module_index,
-        completed_at: enrollment.completed_at,
-        status: enrollment.status,
-        created_at: enrollment.created_at,
-        updated_at: enrollment.updated_at
+    return data.map(enrollment => {
+      const syllabus = enrollment.syllabus?.syllabus?.[0]
+      const generationJob = enrollment.generation_jobs?.syllabus_generation_jobs?.[0]
+
+      // Determine generation status
+      let generation_status: 'generating' | 'completed' | 'failed' = 'generating'
+      let generation_error: string | undefined
+      let generation_progress: number | undefined
+
+      if (syllabus) {
+        if (syllabus.status === 'completed') {
+          generation_status = 'completed'
+        } else if (syllabus.status === 'failed') {
+          generation_status = 'failed'
+          generation_error = generationJob?.error_message || 'Generation failed'
+        } else {
+          generation_status = 'generating'
+          if (generationJob?.status === 'processing') {
+            generation_progress = 50
+          } else if (generationJob?.status === 'pending') {
+            generation_progress = 10
+          }
+        }
+      } else if (generationJob) {
+        if (generationJob.status === 'failed') {
+          generation_status = 'failed'
+          generation_error = generationJob.error_message || 'Generation failed'
+        } else {
+          generation_status = 'generating'
+          generation_progress = generationJob.status === 'processing' ? 50 : 10
+        }
       }
-    }))
+
+      return {
+        ...enrollment.course_configuration,
+        syllabus,
+        generation_job: generationJob,
+        user_enrollment: {
+          id: enrollment.id,
+          user_id: enrollment.user_id,
+          course_configuration_id: enrollment.course_configuration_id,
+          enrolled_at: enrollment.enrolled_at,
+          current_module_index: enrollment.current_module_index,
+          completed_at: enrollment.completed_at,
+          status: enrollment.status,
+          created_at: enrollment.created_at,
+          updated_at: enrollment.updated_at
+        },
+        generation_status,
+        generation_progress,
+        generation_error
+      }
+    })
   },
 
   // Enroll user in a course
