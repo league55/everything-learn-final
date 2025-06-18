@@ -115,7 +115,7 @@ const customStorage = {
 // Create the Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storageKey: 'orion_access_token',
+    storageKey: 'sb-auth-token',
     storage: customStorage,
     autoRefreshToken: true,
     persistSession: true,
