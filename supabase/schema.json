@@ -1,0 +1,446 @@
+[
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "course_configuration_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "module_index",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "topic_index",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "content_type",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "prompt",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "result_content_id",
+      "data_type": "uuid",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "error_message",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "retries",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "max_retries",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "started_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "completed_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_generation_jobs",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "course_configuration_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "module_index",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "topic_index",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "content_type",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "title",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "description",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "content_data",
+      "data_type": "jsonb",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "file_path",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "file_size",
+      "data_type": "bigint",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "mime_type",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "order_index",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "metadata",
+      "data_type": "jsonb",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "content_items",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "course_configuration",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "course_configuration",
+      "column_name": "topic",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "course_configuration",
+      "column_name": "context",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "course_configuration",
+      "column_name": "depth",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "course_configuration",
+      "column_name": "user_id",
+      "data_type": "uuid",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "course_configuration",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "course_configuration",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "syllabus",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "syllabus",
+      "column_name": "course_configuration_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "syllabus",
+      "column_name": "modules",
+      "data_type": "jsonb",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "syllabus",
+      "column_name": "keywords",
+      "data_type": "jsonb",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "syllabus",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "syllabus",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "syllabus",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "syllabus_generation_jobs",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "syllabus_generation_jobs",
+      "column_name": "course_configuration_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "syllabus_generation_jobs",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "syllabus_generation_jobs",
+      "column_name": "retries",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "syllabus_generation_jobs",
+      "column_name": "max_retries",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "syllabus_generation_jobs",
+      "column_name": "error_message",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "syllabus_generation_jobs",
+      "column_name": "started_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "syllabus_generation_jobs",
+      "column_name": "completed_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "syllabus_generation_jobs",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "syllabus_generation_jobs",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "user_enrollments",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "user_enrollments",
+      "column_name": "user_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "user_enrollments",
+      "column_name": "course_configuration_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "user_enrollments",
+      "column_name": "enrolled_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "user_enrollments",
+      "column_name": "current_module_index",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "user_enrollments",
+      "column_name": "completed_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "user_enrollments",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "user_enrollments",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "user_enrollments",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "user_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "course_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "conversation_type",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "tavus_replica_id",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "tavus_conversation_id",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "session_log",
+      "data_type": "jsonb",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "error_message",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "video_conversations",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES"
+    }
+  ]
