@@ -62,9 +62,8 @@ export function ComicPanel({
         damping: 15
       }}
       whileHover={{ 
-        scale: 1.05,
-        rotateY: 5,
-        rotateX: 3
+        rotateY: 2,
+        rotateX: 1
       }}
       style={{ 
         perspective: "1000px",
@@ -83,8 +82,8 @@ export function ComicPanel({
             <div className="w-24 h-24 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
               <Icon className="h-12 w-12 text-white" />
             </div>
-            {/* Comic style "pow" effect */}
-            <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            {/* Comic style "pow" effect - removed scale, only opacity */}
+            <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <span className="text-xs font-bold">✨</span>
             </div>
           </div>

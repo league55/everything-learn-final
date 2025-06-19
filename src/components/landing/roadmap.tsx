@@ -97,11 +97,10 @@ function RoadmapStepComponent({ step, index }: { step: RoadmapStep; index: numbe
       <div className={`w-5/12 ${index % 2 === 0 ? 'pr-8' : 'pl-8'}`}>
         <motion.div
           whileHover={{ 
-            scale: 1.03,
-            rotateY: index % 2 === 0 ? 8 : -8,
-            rotateX: 3
+            rotateY: index % 2 === 0 ? 3 : -3,
+            rotateX: 1
           }}
-          transition={{ type: "spring", stiffness: 200, damping: 20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
           className="relative group cursor-pointer"
           style={{ 
             perspective: "1000px",
@@ -168,7 +167,7 @@ function RoadmapStepComponent({ step, index }: { step: RoadmapStep; index: numbe
             stiffness: 200,
             damping: 15
           }}
-          whileHover={{ scale: 1.15, rotate: 360 }}
+          whileHover={{ rotate: 180 }}
           className="relative"
         >
           {/* Outer glow ring */}
