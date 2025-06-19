@@ -5,7 +5,7 @@ export function MainLayout() {
   return (
     <div className="flex h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 ml-16 overflow-y-auto">
+      <main className="flex-1 ml-16">
         <Outlet />
       </main>
     </div>

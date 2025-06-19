@@ -194,7 +194,7 @@ export function Roadmap({ scrollRef }: RoadmapProps) {
   // Track scroll progress through the roadmap section
   const { scrollYProgress } = useScroll({
     target: scrollRef,
-    offset: ["start center", "end center"]
+    offset: ["start 5%", "end end"]
   });
 
   // Transform scroll progress to line height
