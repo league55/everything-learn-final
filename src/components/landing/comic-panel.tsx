@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
-import { LucideIcon } from 'lucide-react'
+import { DivideIcon as LucideIcon } from 'lucide-react'
 import Typewriter from 'typewriter-effect'
 import { cn } from '@/lib/utils'
 
