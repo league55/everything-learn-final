@@ -1,15 +1,19 @@
 import { AnimatedBackground } from '@/components/landing/animated-background'
 import { CourseForm } from '@/components/landing/course-form' 
+import { OriginStorySection } from '@/components/landing/origin-story-section'
 import { Roadmap } from '@/components/landing/roadmap'
 import { ShootingStars } from '@/components/landing/shoting-stars'
 import { motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
+import { useRef } from 'react'
 
 export function LandingPage() {
+  const roadmapRef = useRef<HTMLElement>(null)
+
   return (
     <div className="relative">
       {/* Hero Section */}
-      <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
+      <div id="hero-section" className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
         <ShootingStars
           starColor="#9E00FF"
           trailColor="#2EB9DF"
@@ -39,7 +43,7 @@ export function LandingPage() {
         
         {/* Scroll Indicator */}
         <motion.div
-          className="absolute bottom-8 transform -translate-x-1/2 z-10 flex flex-col items-center"
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2, duration: 0.8 }}
@@ -49,12 +53,12 @@ export function LandingPage() {
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             onClick={() => {
-              const roadmapSection = document.getElementById('roadmap-section')
-              roadmapSection?.scrollIntoView({ behavior: 'smooth' })
+              const originSection = document.getElementById('origin-section')
+              originSection?.scrollIntoView({ behavior: 'smooth' })
             }}
           >
             <span className="text-sm font-medium group-hover:text-foreground transition-colors">
-              Learn more
+              Learn our story
             </span>
             <motion.div
               className="w-6 h-10 border-2 border-muted-foreground/30 rounded-full flex justify-center group-hover:border-foreground/50 transition-colors"
@@ -71,9 +75,14 @@ export function LandingPage() {
         </motion.div>
       </div>
 
+      {/* Origin Story Section */}
+      <div id="origin-section">
+        <OriginStorySection />
+      </div>
+
       {/* Roadmap Timeline Section */}
-      <div id="roadmap-section">
-        <Roadmap />
+      <div id="roadmap-section" ref={roadmapRef}>
+        <Roadmap scrollRef={roadmapRef} />
       </div>
     </div>
   )
