@@ -2,6 +2,9 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { authStorage } from '@/lib/auth-storage'
+import { PendingCourseManager } from '@/lib/pending-course'
+import { dbOperations } from '@/lib/supabase'
+import { useToast } from '@/hooks/use-toast'
 
 interface AuthContextType {
   user: User | null
@@ -20,6 +23,71 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [processingPendingCourse, setProcessingPendingCourse] = useState(false)
+
+  // Create a ref for toast to avoid dependency issues
+  const toastRef = useToast()
+
+  // Function to handle pending course creation
+  const handlePendingCourse = async (authenticatedUser: User) => {
+    const pendingConfig = PendingCourseManager.getPendingConfig()
+    
+    if (!pendingConfig) return
+    
+    console.log('Found pending course config:', pendingConfig)
+    
+    // Validate the pending config
+    if (!PendingCourseManager.validateConfig(pendingConfig)) {
+      console.error('Invalid pending course config')
+      PendingCourseManager.clearPendingConfig()
+      return
+    }
+
+    setProcessingPendingCourse(true)
+
+    try {
+      toastRef.toast({
+        title: "Creating your course!",
+        description: `We're now generating your course "${pendingConfig.topic}". This will take a few minutes.`,
+        duration: 6000,
+      })
+
+      // Create course configuration
+      const courseConfig = await dbOperations.createCourseConfiguration({
+        topic: pendingConfig.topic,
+        context: pendingConfig.context,
+        depth: pendingConfig.depth
+      })
+
+      // Create initial syllabus record and enqueue generation job
+      await dbOperations.createSyllabus(courseConfig.id)
+
+      // Clear the pending config
+      PendingCourseManager.clearPendingConfig()
+
+      toastRef.toast({
+        title: "Course Created Successfully!",
+        description: `Your course "${pendingConfig.topic}" is being generated. Check the courses page to track progress.`,
+        duration: 8000,
+      })
+
+      console.log('Successfully created course from pending config')
+
+    } catch (error) {
+      console.error('Failed to create course from pending config:', error)
+      
+      toastRef.toast({
+        title: "Failed to Create Course",
+        description: error instanceof Error ? error.message : "Please try creating your course again.",
+        variant: "destructive",
+        duration: 8000,
+      })
+      
+      // Don't clear the pending config on error, so user can retry
+    } finally {
+      setProcessingPendingCourse(false)
+    }
+  }
 
   useEffect(() => {
     console.log('AuthProvider mounted')
@@ -55,6 +123,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
               console.log('Updating stored auth data')
               await authStorage.updateStoredAuthData(initialSession.user, initialSession)
               console.log('Stored auth data updated successfully')
+              
+              // Check for pending course after authentication
+              if (!processingPendingCourse) {
+                await handlePendingCourse(initialSession.user)
+              }
             } catch (error) {
               console.error('Error updating stored auth data:', error)
             }
@@ -121,6 +194,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
               console.log('Updating stored auth data after state change')
               await authStorage.updateStoredAuthData(session.user, session)
               console.log('Stored auth data updated successfully')
+              
+              // Check for pending course on sign in events
+              if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && !processingPendingCourse) {
+                await handlePendingCourse(session.user)
+              }
             } catch (error) {
               console.error('Error updating stored auth data:', error)
             }
@@ -144,7 +222,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [processingPendingCourse]) // Add processingPendingCourse to dependencies
 
   const signOut = async () => {
     console.log('Signing out...')
@@ -155,6 +233,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null)
       setSession(null)
       authStorage.clearStoredAuthData()
+      // Clear any pending course config on sign out
+      PendingCourseManager.clearPendingConfig()
       console.log('Local state cleared')
     } catch (error) {
       console.error('Error signing out:', error)
@@ -170,9 +250,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       hasUser: !!user,
       userEmail: user?.email,
       hasSession: !!session,
-      loading
+      loading,
+      processingPendingCourse
     })
-  }, [user, session, loading])
+  }, [user, session, loading, processingPendingCourse])
 
   const value = {
     user,

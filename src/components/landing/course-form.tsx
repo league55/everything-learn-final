@@ -7,6 +7,8 @@ import { NavigationButtons } from './navigation-buttons'
 import { TopicCarousel } from './topic-carousel'
 import { ContextCarousel } from './context-carousel'
 import { dbOperations } from '@/lib/supabase'
+import { useAuth } from '@/providers/auth-provider'
+import { PendingCourseManager } from '@/lib/pending-course'
 import { useToast } from '@/hooks/use-toast'
 
 interface CourseForm {
@@ -47,6 +49,7 @@ export function CourseForm() {
     depth: 3
   })
   
+  const { user } = useAuth()
   const { toast } = useToast()
 
   const currentStepData = steps[currentStep - 1]
@@ -55,29 +58,33 @@ export function CourseForm() {
     setIsSubmitting(true)
     
     try {
-      // Create course configuration
-      const courseConfig = await dbOperations.createCourseConfiguration({
-        topic: formData.topic.trim(),
-        context: formData.context.trim(),
-        depth: formData.depth
-      })
+      // Validate form data
+      if (!formData.topic.trim() || !formData.context.trim()) {
+        throw new Error('Please fill in all required fields')
+      }
 
-      // Create initial syllabus record and enqueue generation job
-      const { syllabus, job } = await dbOperations.createSyllabus(courseConfig.id)
+      // Check if user is authenticated
+      if (!user) {
+        // Save form data to localStorage and redirect to login
+        PendingCourseManager.savePendingConfig({
+          topic: formData.topic.trim(),
+          context: formData.context.trim(),
+          depth: formData.depth
+        })
 
-      toast({
-        title: "Course Created Successfully!",
-        description: `Your course "${formData.topic}" is being generated. You can track its progress in the courses page.`,
-        duration: 5000,
-      })
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to create your course. Your progress has been saved.",
+          duration: 4000,
+        })
 
-      // Reset form
-      setFormData({
-        topic: '',
-        context: '',
-        depth: 3
-      })
-      setCurrentStep(1)
+        // Redirect to login page
+        window.location.href = '/login'
+        return
+      }
+
+      // User is authenticated, proceed with course creation
+      await createCourse()
 
     } catch (error) {
       console.error('Failed to submit course:', error)
@@ -90,6 +97,35 @@ export function CourseForm() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const createCourse = async () => {
+    // Create course configuration
+    const courseConfig = await dbOperations.createCourseConfiguration({
+      topic: formData.topic.trim(),
+      context: formData.context.trim(),
+      depth: formData.depth
+    })
+
+    // Create initial syllabus record and enqueue generation job
+    const { syllabus, job } = await dbOperations.createSyllabus(courseConfig.id)
+
+    toast({
+      title: "Course Created Successfully!",
+      description: `Your course "${formData.topic}" is being generated. You can track its progress in the courses page.`,
+      duration: 5000,
+    })
+
+    // Reset form
+    setFormData({
+      topic: '',
+      context: '',
+      depth: 3
+    })
+    setCurrentStep(1)
+
+    // Clear any pending config since we successfully created the course
+    PendingCourseManager.clearPendingConfig()
   }
 
   const handleNext = () => {

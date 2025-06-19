@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Eye, EyeOff, Mail, Lock, CheckCircle } from 'lucide-react'
 import { authOperations } from '@/lib/auth'
 import { useAuth } from '@/providers/auth-provider'
+import { PendingCourseManager } from '@/lib/pending-course'
+import { PendingCourseNotification } from '@/components/ui/pending-course-notification'
 import { cn } from '@/lib/utils'
 
 interface SignUpFormData {
@@ -58,7 +60,7 @@ export function SignUpPage() {
       if (user) {
         setSuccess(true)
         // Note: With email confirmation enabled, user needs to check email
-        // Without email confirmation, they would be automatically signed in
+        // The AuthProvider will handle pending course creation after email confirmation
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
@@ -76,29 +78,38 @@ export function SignUpPage() {
 
   const passwordsMatch = formData.password === formData.confirmPassword
   const passwordLongEnough = formData.password.length >= 6
+  const hasPendingCourse = PendingCourseManager.hasPendingConfig()
 
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md shadow-2xl border-0 bg-card/80 backdrop-blur-lg">
-          <CardHeader className="text-center">
-            <div className="mx-auto h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mb-4">
-              <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-            <CardTitle className="text-2xl font-bold">Account Created!</CardTitle>
-            <CardDescription>
-              Please check your email for a confirmation link to complete your registration.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button
-              onClick={() => navigate('/login')}
-              className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-            >
-              Go to Sign In
-            </Button>
-          </CardFooter>
-        </Card>
+        <div className="w-full max-w-md space-y-4">
+          {/* Show pending course notification if exists */}
+          {hasPendingCourse && <PendingCourseNotification />}
+          
+          <Card className="shadow-2xl border-0 bg-card/80 backdrop-blur-lg">
+            <CardHeader className="text-center">
+              <div className="mx-auto h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mb-4">
+                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <CardTitle className="text-2xl font-bold">Account Created!</CardTitle>
+              <CardDescription>
+                {hasPendingCourse 
+                  ? 'Please check your email for a confirmation link. Your course will be created automatically after you confirm your email and sign in.'
+                  : 'Please check your email for a confirmation link to complete your registration.'
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button
+                onClick={() => navigate('/login')}
+                className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+              >
+                Go to Sign In
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -115,158 +126,170 @@ export function SignUpPage() {
         </div>
       </div>
 
-      <Card className="w-full max-w-md relative z-10 shadow-2xl border-0 bg-card/80 backdrop-blur-lg">
-        <CardHeader className="space-y-2 text-center">
-          <div className="mx-auto h-12 w-12 rounded-lg bg-primary flex items-center justify-center mb-4">
-            <span className="text-primary-foreground font-bold text-xl">O</span>
-          </div>
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>
-            Join Orion Path and start your learning journey
-          </CardDescription>
-        </CardHeader>
+      <div className="w-full max-w-md relative z-10 space-y-4">
+        {/* Pending Course Notification */}
+        {hasPendingCourse && <PendingCourseNotification />}
 
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="pl-10"
-                  disabled={loading}
-                  required
-                />
-              </div>
+        <Card className="shadow-2xl border-0 bg-card/80 backdrop-blur-lg">
+          <CardHeader className="space-y-2 text-center">
+            <div className="mx-auto h-12 w-12 rounded-lg bg-primary flex items-center justify-center mb-4">
+              <span className="text-primary-foreground font-bold text-xl">O</span>
             </div>
+            <CardTitle className="text-2xl font-bold">
+              {hasPendingCourse ? 'Create account to build your course' : 'Create an account'}
+            </CardTitle>
+            <CardDescription>
+              {hasPendingCourse 
+                ? 'Sign up to complete your course creation and start learning'
+                : 'Join Orion Path and start your learning journey'
+              }
+            </CardDescription>
+          </CardHeader>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Create a password"
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className="pl-10 pr-10"
-                  disabled={loading}
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              {formData.password && (
-                <div className="text-xs text-muted-foreground">
-                  Password must be at least 6 characters{' '}
-                  {passwordLongEnough ? (
-                    <span className="text-green-600">✓</span>
-                  ) : (
-                    <span className="text-red-500">✗</span>
-                  )}
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="pl-10"
+                    disabled={loading}
+                    required
+                  />
                 </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  className="pl-10 pr-10"
-                  disabled={loading}
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={loading}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
               </div>
-              {formData.confirmPassword && (
-                <div className="text-xs text-muted-foreground">
-                  Passwords match{' '}
-                  {passwordsMatch ? (
-                    <span className="text-green-600">✓</span>
-                  ) : (
-                    <span className="text-red-500">✗</span>
-                  )}
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Create a password"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    className="pl-10 pr-10"
+                    disabled={loading}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
-              )}
-            </div>
-          </CardContent>
+                {formData.password && (
+                  <div className="text-xs text-muted-foreground">
+                    Password must be at least 6 characters{' '}
+                    {passwordLongEnough ? (
+                      <span className="text-green-600">✓</span>
+                    ) : (
+                      <span className="text-red-500">✗</span>
+                    )}
+                  </div>
+                )}
+              </div>
 
-          <CardFooter className="flex flex-col space-y-4">
-            <Button
-              type="submit"
-              className={cn(
-                "w-full h-11 font-medium transition-all duration-200",
-                isFormValid && !loading
-                  ? "bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                  : "bg-muted-foreground/20"
-              )}
-              disabled={!isFormValid || loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </Button>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    className="pl-10 pr-10"
+                    disabled={loading}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    disabled={loading}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                {formData.confirmPassword && (
+                  <div className="text-xs text-muted-foreground">
+                    Passwords match{' '}
+                    {passwordsMatch ? (
+                      <span className="text-green-600">✓</span>
+                    ) : (
+                      <span className="text-red-500">✗</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
 
-            <div className="text-center text-sm text-muted-foreground">
-              Already have an account?{' '}
-              <Link
-                to="/login"
-                className="font-medium text-primary hover:text-primary/80 transition-colors"
+            <CardFooter className="flex flex-col space-y-4">
+              <Button
+                type="submit"
+                className={cn(
+                  "w-full h-11 font-medium transition-all duration-200",
+                  isFormValid && !loading
+                    ? "bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                    : "bg-muted-foreground/20"
+                )}
+                disabled={!isFormValid || loading}
               >
-                Sign in
-              </Link>
-            </div>
-          </CardFooter>
-        </form>
-      </Card>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    {hasPendingCourse ? 'Create Account & Course' : 'Create Account'}
+                  </>
+                )}
+              </Button>
+
+              <div className="text-center text-sm text-muted-foreground">
+                Already have an account?{' '}
+                <Link
+                  to="/login"
+                  className="font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  Sign in
+                </Link>
+              </div>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
     </div>
   )
 }
