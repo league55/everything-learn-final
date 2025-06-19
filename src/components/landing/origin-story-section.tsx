@@ -110,26 +110,29 @@ export function OriginStorySection() {
         <motion.div
           className="text-center mt-20"
           initial={{ opacity: 0, y: 40 }}
-            <motion.div
-            whileHover={{ y: -2 }}
-            whileTap={{ y: 0 }}
+        >
           <motion.div
-            className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white font-semibold shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 cursor-pointer border-0"
             whileHover={{ y: -2 }}
             whileTap={{ y: 0 }}
-            onClick={() => {
-              const heroSection = document.getElementById('hero-section')
-              heroSection?.scrollIntoView({ behavior: 'smooth' })
-            }}
           >
-            <Users className="h-5 w-5" />
-            <span>Join thousands of learners</span>
-            <Zap className="h-5 w-5" />
-          </motion.div>
+            <motion.div
+              className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white font-semibold shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 cursor-pointer border-0"
+              whileHover={{ y: -2 }}
+              whileTap={{ y: 0 }}
+              onClick={() => {
+                const heroSection = document.getElementById('hero-section')
+                heroSection?.scrollIntoView({ behavior: 'smooth' })
+              }}
+            >
+              <Users className="h-5 w-5" />
+              <span>Join thousands of learners</span>
+              <Zap className="h-5 w-5" />
+            </motion.div>
           
-          <p className="text-muted-foreground mt-4 max-w-md mx-auto">
-            Start your personalized learning journey today
-          </p>
+            <p className="text-muted-foreground mt-4 max-w-md mx-auto">
+              Start your personalized learning journey today
+            </p>
+          </motion.div>
         </motion.div>
       </div>
     </motion.section>
