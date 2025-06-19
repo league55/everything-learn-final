@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Award, Target, GraduationCap, BookOpen, Users, Star, Zap } from 'lucide-react'
-import { dbOperations } from '@/lib/supabase'
+import { enrollmentDb, courseDb } from '@/lib/supabase/db'
 import { useAuth } from '@/providers/auth-provider'
-import type { CourseWithDetails, CourseConfiguration } from '@/lib/supabase'
+import type { CourseWithDetails, CourseConfiguration } from '@/lib/supabase/types'
 
 export function Achievements() {
   const { user } = useAuth()
@@ -27,11 +27,11 @@ export function Achievements() {
         setError(null)
         
         // Load enrolled courses
-        const userEnrolledCourses = await dbOperations.getUserEnrolledCourses()
+        const userEnrolledCourses = await enrollmentDb.getUserEnrolledCourses()
         setEnrolledCourses(userEnrolledCourses)
         
         // Load created courses (should already be filtered by user_id)
-        const userCreatedCourses = await dbOperations.getCourseConfigurations()
+        const userCreatedCourses = await courseDb.getCourseConfigurations()
         setCreatedCourses(userCreatedCourses)
         
         console.log('Achievements - User ID:', user.id)

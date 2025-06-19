@@ -6,8 +6,8 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BookOpen, Target, Clock, Play, CheckCircle, TrendingUp, ExternalLink, Award } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { dbOperations } from '@/lib/supabase'
-import type { CourseWithDetails } from '@/lib/supabase'
+import { enrollmentDb } from '@/lib/supabase/db'
+import type { CourseWithDetails } from '@/lib/supabase/types'
 import { useAuth } from '@/providers/auth-provider'
 import { authStorage } from '@/lib/auth-storage'
 
@@ -25,7 +25,7 @@ export function CourseList({}: CourseListProps) {
     const loadEnrolledCourses = async () => {
       try {
         setLoading(true)
-        const userCourses = await dbOperations.getUserEnrolledCourses()
+        const userCourses = await enrollmentDb.getUserEnrolledCourses()
         setEnrolledCourses(userCourses)
       } catch (err) {
         console.error('Failed to load enrolled courses:', err)

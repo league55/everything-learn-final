@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/providers/auth-provider'
-import { dbOperations } from '@/lib/supabase'
-import type { CourseWithDetails } from '@/lib/supabase'
+import { courseDb } from '@/lib/supabase/db'
+import type { CourseWithDetails } from '@/lib/supabase/types'
 import { 
   BookOpen,
   CheckCircle,
@@ -32,7 +32,7 @@ export function AllCoursesSection() {
       setError(null)
       
       // Load all courses (including generating ones)
-      const courses = await dbOperations.getAllCourses()
+      const courses = await courseDb.getAllCourses()
       setAllCourses(courses)
 
     } catch (err) {

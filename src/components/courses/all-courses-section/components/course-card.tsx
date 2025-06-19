@@ -11,11 +11,11 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { CourseWithDetails } from '@/lib/supabase'
+import type { CourseWithDetails } from '@/lib/supabase/types'
 import { getDepthLabel, getDepthColor, formatDate, calculateProgress } from '../../enrolled-courses-section/utils/course-utils'
 import { StatusBadge } from '../../enrolled-courses-section/components/status-badge'
 import { useAuth } from '@/providers/auth-provider'
-import { dbOperations } from '@/lib/supabase'
+import { enrollmentDb } from '@/lib/supabase/db'
 import { useToast } from '@/hooks/use-toast'
 import { authStorage } from '@/lib/auth-storage'
 import { useState } from 'react'
@@ -74,7 +74,7 @@ export function CourseCard({ course, onEnrollmentChange }: CourseCardProps) {
 
     setEnrolling(true)
     try {
-      await dbOperations.enrollInCourse(course.id)
+      await enrollmentDb.enrollInCourse(course.id)
       
       toast({
         title: "Successfully Enrolled!",

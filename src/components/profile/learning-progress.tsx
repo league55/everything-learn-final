@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { BookOpen, TrendingUp, Target, Award } from 'lucide-react'
-import { dbOperations } from '@/lib/supabase'
+import { enrollmentDb, courseDb } from '@/lib/supabase/db'
 import { useAuth } from '@/providers/auth-provider'
-import type { CourseWithDetails, CourseConfiguration } from '@/lib/supabase'
+import type { CourseWithDetails, CourseConfiguration } from '@/lib/supabase/types'
 
 export function LearningProgress() {
   const { user } = useAuth()
@@ -27,11 +27,11 @@ export function LearningProgress() {
         setError(null)
         
         // Load enrolled courses for progress tracking
-        const userEnrolledCourses = await dbOperations.getUserEnrolledCourses()
+        const userEnrolledCourses = await enrollmentDb.getUserEnrolledCourses()
         setEnrolledCourses(userEnrolledCourses)
         
         // Load created courses (should already be filtered by user_id in the database function)
-        const userCreatedCourses = await dbOperations.getCourseConfigurations()
+        const userCreatedCourses = await courseDb.getCourseConfigurations()
         setCreatedCourses(userCreatedCourses)
         
         console.log('User ID:', user.id)

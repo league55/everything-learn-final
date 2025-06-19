@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Clock, ExternalLink, Loader2, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { CourseWithDetails } from '@/lib/supabase'
+import type { CourseWithDetails } from '@/lib/supabase/types'
 import { getDepthLabel, getDepthColor, formatDate, calculateProgress } from '../utils/course-utils'
 import { StatusBadge } from './status-badge'
 

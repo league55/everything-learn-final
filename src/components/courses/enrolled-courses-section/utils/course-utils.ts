@@ -1,4 +1,4 @@
-import type { CourseWithDetails } from '@/lib/supabase'
+import type { CourseWithDetails } from '@/lib/supabase/types'
 
 export const getDepthLabel = (depth: number) => {
   const labels = {

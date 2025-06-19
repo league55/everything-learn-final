@@ -6,7 +6,7 @@ import { DepthSelector } from './depth-selector'
 import { NavigationButtons } from './navigation-buttons'
 import { TopicCarousel } from './topic-carousel'
 import { ContextCarousel } from './context-carousel'
-import { dbOperations } from '@/lib/supabase'
+import { courseDb, enrollmentDb } from '@/lib/supabase/db'
 import { useToast } from '@/hooks/use-toast'
 
 interface CourseForm {
@@ -56,14 +56,14 @@ export function CourseForm() {
     
     try {
       // Create course configuration
-      const courseConfig = await dbOperations.createCourseConfiguration({
+      const courseConfig = await courseDb.createCourseConfiguration({
         topic: formData.topic.trim(),
         context: formData.context.trim(),
         depth: formData.depth
       })
 
       // Create initial syllabus record and enqueue generation job
-      const { syllabus, job } = await dbOperations.createSyllabus(courseConfig.id)
+      const { syllabus, job } = await courseDb.createSyllabus(courseConfig.id)
 
       toast({
         title: "Course Created Successfully!",

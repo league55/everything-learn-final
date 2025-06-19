@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/providers/auth-provider'
-import { dbOperations } from '@/lib/supabase'
-import type { CourseWithDetails } from '@/lib/supabase'
+import { enrollmentDb } from '@/lib/supabase/db'
+import type { CourseWithDetails } from '@/lib/supabase/types'
 import { useToast } from '@/hooks/use-toast'
 import { authStorage } from '@/lib/auth-storage'
 import { 
@@ -38,7 +38,7 @@ export function EnrolledCoursesSection() {
 
       try {
         setLoading(true)
-        const userCourses = await dbOperations.getUserEnrolledCourses()
+        const userCourses = await enrollmentDb.getUserEnrolledCourses()
         setEnrolledCourses(userCourses)
       } catch (err) {
         console.error('Failed to load enrolled courses:', err)
@@ -67,7 +67,7 @@ export function EnrolledCoursesSection() {
 
   const handleRetryGeneration = async (courseId: string) => {
     try {
-      await dbOperations.retryCourseGeneration(courseId)
+      await enrollmentDb.retryCourseGeneration(courseId)
       
       toast({
         title: "Generation Retried",
@@ -76,7 +76,7 @@ export function EnrolledCoursesSection() {
       })
 
       // Reload courses
-      const userCourses = await dbOperations.getUserEnrolledCourses()
+      const userCourses = await enrollmentDb.getUserEnrolledCourses()
       setEnrolledCourses(userCourses)
     } catch (err) {
       console.error('Failed to retry generation:', err)

@@ -1,4 +1,4 @@
-import type { CourseWithDetails } from '@/lib/supabase'
+import type { CourseWithDetails } from '@/lib/supabase/types'
 import { CheckCircle } from 'lucide-react'
 import { EmptyStateCard } from '../components/empty-state-card'
 import { CourseCard } from '../components/course-card'

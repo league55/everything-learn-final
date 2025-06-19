@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import type { CourseWithDetails } from '@/lib/supabase'
+import type { CourseWithDetails } from '@/lib/supabase/types'
 import { CheckCircle } from 'lucide-react'
 import { CourseCard } from '../components/course-card'
 
