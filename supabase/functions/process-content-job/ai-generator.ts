@@ -194,12 +194,10 @@ export class AIGenerator {
               },
               url: {
                 type: "string",
-                format: "uri",
                 description: "Source URL"
               },
               publication_date: {
                 type: "string",
-                format: "date",
                 description: "Publication date"
               },
               publisher: {
@@ -212,7 +210,6 @@ export class AIGenerator {
               },
               access_date: {
                 type: "string",
-                format: "date",
                 description: "Date accessed"
               },
               relevance: {
