@@ -48,9 +48,9 @@ export const certificateOperations = {
       .from('certificates')
       .select('*')
       .eq('certificate_id', certificateId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       throw new Error(`Failed to fetch certificate: ${error.message}`);
     }
 
@@ -124,9 +124,9 @@ export const certificateOperations = {
       .from('user_profiles')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       throw new Error(`Failed to fetch user profile: ${error.message}`);
     }
 

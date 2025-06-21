@@ -206,9 +206,9 @@ export class CertificateAPI {
         .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw new Error(`Failed to fetch user profile: ${error.message}`);
       }
 
