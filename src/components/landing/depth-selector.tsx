@@ -19,7 +19,7 @@ export function DepthSelector({ value, onChange, disabled }: DepthSelectorProps)
     <div className="max-w-2xl mx-auto mb-12">
       <div className="space-y-8">
         {/* Depth Label */}
-        <div className="text-2xl font-bold text-white">
+        <div className="text-2xl font-bold text-foreground">
           {depthLabels[value as keyof typeof depthLabels]}
         </div>
         
