@@ -20,21 +20,20 @@ function getCookieDomain(): string {
     return ''
   }
   
+  // For bolt.new domains, don't set domain to avoid cross-origin issues
+  if (hostname.includes('bolt.new')) {
+    console.log('Using bolt.new - no domain set to avoid cross-origin issues')
+    return ''
+  }
+  
   // For everythinglearn.online and its subdomains
   if (hostname.includes('everythinglearn.online')) {
     console.log('Using everythinglearn.online domain')
     return '.everythinglearn.online'
   }
   
-  // For other domains, try to extract the main domain
-  const parts = hostname.split('.')
-  if (parts.length >= 2) {
-    const domain = `.${parts.slice(-2).join('.')}`
-    console.log('Extracted domain:', domain)
-    return domain
-  }
-  
-  console.log('No domain set')
+  // For other domains, don't set domain by default to be safe
+  console.log('Using default - no domain set for safety')
   return ''
 }
 
@@ -55,41 +54,76 @@ function getCookieAttributes(): string {
   return attributes
 }
 
-// Create a custom storage implementation
+// Create a custom storage implementation with better error handling
 const customStorage = {
   getItem: (key: string) => {
     try {
       console.log('Getting cookie:', key)
+      
+      // Fallback to localStorage if cookies fail
+      if (typeof document === 'undefined') {
+        if (typeof localStorage !== 'undefined') {
+          return localStorage.getItem(key)
+        }
+        return null
+      }
+      
       const cookies = document.cookie.split(';')
       const cookie = cookies.find(c => c.trim().startsWith(`${key}=`))
-      const value = cookie ? decodeURIComponent(cookie.split('=')[1]) : null
-      console.log('Cookie value:', value ? 'exists' : 'null')
+      let value = cookie ? decodeURIComponent(cookie.split('=')[1]) : null
+      
+      // If cookie not found, try localStorage as fallback
+      if (!value && typeof localStorage !== 'undefined') {
+        value = localStorage.getItem(key)
+        console.log('Cookie not found, trying localStorage:', value ? 'exists' : 'null')
+      }
+      
+      console.log('Final cookie value:', value ? 'exists' : 'null')
       return value
     } catch (error) {
       console.error('Error getting cookie:', error)
+      
+      // Fallback to localStorage
+      try {
+        if (typeof localStorage !== 'undefined') {
+          return localStorage.getItem(key)
+        }
+      } catch (localStorageError) {
+        console.error('Error getting from localStorage:', localStorageError)
+      }
+      
       return null
     }
   },
+  
   setItem: (key: string, value: string) => {
     try {
       console.log('Setting cookie:', key)
-      const domain = getCookieDomain()
-      let attributes = 'path=/; samesite=lax; max-age=31536000' // 1 year
-      
-      if (domain) {
-        attributes += `; domain=${domain}`
-      }
-      
-      if (window.location.protocol === 'https:') {
-        attributes += '; secure'
-      }
+      const attributes = getCookieAttributes()
       
       console.log('Cookie attributes:', attributes)
       document.cookie = `${key}=${encodeURIComponent(value)}; ${attributes}`
+      
+      // Also store in localStorage as backup
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(key, value)
+        console.log('Also stored in localStorage as backup')
+      }
     } catch (error) {
       console.error('Error setting cookie:', error)
+      
+      // Fallback to localStorage
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(key, value)
+          console.log('Fallback: stored in localStorage')
+        }
+      } catch (localStorageError) {
+        console.error('Error setting localStorage:', localStorageError)
+      }
     }
   },
+  
   removeItem: (key: string) => {
     try {
       console.log('Removing cookie:', key)
@@ -106,8 +140,24 @@ const customStorage = {
       
       console.log('Cookie removal attributes:', attributes)
       document.cookie = `${key}=; ${attributes}`
+      
+      // Also remove from localStorage
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(key)
+        console.log('Also removed from localStorage')
+      }
     } catch (error) {
       console.error('Error removing cookie:', error)
+      
+      // Fallback to localStorage removal
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(key)
+          console.log('Fallback: removed from localStorage')
+        }
+      } catch (localStorageError) {
+        console.error('Error removing from localStorage:', localStorageError)
+      }
     }
   }
 }

@@ -18,17 +18,17 @@ function getCookieDomain(): string {
     return ''
   }
   
+  // For bolt.new domains, don't set domain to avoid cross-origin issues
+  if (hostname.includes('bolt.new')) {
+    return ''
+  }
+  
   // For everythinglearn.online and its subdomains
   if (hostname.includes('everythinglearn.online')) {
     return '.everythinglearn.online'
   }
   
-  // For other domains, try to extract the main domain
-  const parts = hostname.split('.')
-  if (parts.length >= 2) {
-    return `.${parts.slice(-2).join('.')}`
-  }
-  
+  // For other domains, don't set domain by default to be safe
   return ''
 }
 
@@ -54,18 +54,51 @@ function setCookie(name: string, value: string): void {
   
   const attributes = getCookieAttributes()
   document.cookie = `${name}=${encodeURIComponent(value)}; ${attributes}`
+  
+  // Also store in localStorage as backup for bolt.new environment
+  try {
+    localStorage.setItem(name, value)
+  } catch (error) {
+    console.warn('Failed to set localStorage backup:', error)
+  }
 }
 
 function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null
+  if (typeof document === 'undefined') {
+    // Try localStorage as fallback
+    try {
+      return localStorage.getItem(name)
+    } catch (error) {
+      return null
+    }
+  }
   
   const cookies = document.cookie.split(';')
   const cookie = cookies.find(c => c.trim().startsWith(`${name}=`))
-  return cookie ? decodeURIComponent(cookie.split('=')[1]) : null
+  let value = cookie ? decodeURIComponent(cookie.split('=')[1]) : null
+  
+  // If cookie not found, try localStorage as fallback
+  if (!value) {
+    try {
+      value = localStorage.getItem(name)
+    } catch (error) {
+      console.warn('Failed to get localStorage fallback:', error)
+    }
+  }
+  
+  return value
 }
 
 function removeCookie(name: string): void {
-  if (typeof document === 'undefined') return
+  if (typeof document === 'undefined') {
+    // Remove from localStorage
+    try {
+      localStorage.removeItem(name)
+    } catch (error) {
+      console.warn('Failed to remove from localStorage:', error)
+    }
+    return
+  }
   
   const domain = getCookieDomain()
   let attributes = 'path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax'
@@ -79,6 +112,13 @@ function removeCookie(name: string): void {
   }
   
   document.cookie = `${name}=; ${attributes}`
+  
+  // Also remove from localStorage
+  try {
+    localStorage.removeItem(name)
+  } catch (error) {
+    console.warn('Failed to remove from localStorage:', error)
+  }
 }
 
 export class AuthStorage {
@@ -89,10 +129,11 @@ export class AuthStorage {
   /**
    * Store authentication data for cross-domain library access
    */
-  async storeAuthForLibrary(user: User, session: Session): Promise<void> {
+  async storeAuthForLibrary(user: User, session?: Session): Promise<void> {
     try {
+      // If no session provided, try to get current session
       if (!session) {
-        console.warn('No session provided')
+        console.warn('No session provided to storeAuthForLibrary')
         return
       }
 
@@ -169,8 +210,12 @@ export class AuthStorage {
 
     // Also clear from localStorage as fallback
     if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(this.LIBRARY_STORAGE_KEY)
-      localStorage.removeItem(this.STORAGE_KEY)
+      try {
+        localStorage.removeItem(this.LIBRARY_STORAGE_KEY)
+        localStorage.removeItem(this.STORAGE_KEY)
+      } catch (error) {
+        console.warn('Failed to clear localStorage:', error)
+      }
     }
   }
 
