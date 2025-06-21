@@ -12,6 +12,7 @@
     "blockchain:setup": "node scripts/setup-blockchain.js"
   },
   "dependencies": {
+    "@algorandfoundation/algokit-utils": "^6.0.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -42,7 +43,6 @@
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.2",
     "@supabase/supabase-js": "^2.39.1",
-    "@algorandfoundation/algokit-utils": "^6.0.0",
     "algosdk": "^2.7.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -87,6 +87,7 @@
     "eslint-plugin-react-refresh": "^0.4.12",
     "globals": "^15.9.0",
     "postcss": "^8.4.47",
+    "supabase": "^2.26.9",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.7.0",

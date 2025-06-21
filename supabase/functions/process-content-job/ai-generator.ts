@@ -41,83 +41,64 @@ export class AIGenerator {
       topic: module.topics[topicIndex]
     };
   }
-  buildSystemPrompt(courseConfig, contentType) {
-    const depthExamples = {
-      1: `Explain like teaching a complete beginner. Use everyday analogies (e.g., "Variables are like labeled boxes"). Include 1 simple code snippet.`,
-      3: `For intermediate learners: Combine theory with practical case studies. Include 2-3 real-world examples and 1 hands-on exercise.`,
-      5: `Professional level: Focus on current industry practices. Include research papers (post-2022) and professional tooling examples.`
-    };
-  
-    return `You're an expert instructional designer creating ${contentType} content. Follow these principles:
-  
-  ## Pedagogical Guidelines
-  1. **Progressive Difficulty**:
-     - Module 1: Foundational principles
-     - Module 2: Core applications
-     - Module 3: Advanced implementations
-  
-  2. **Practical Focus**:
-     - Include ${this.getPracticalComponents(contentType)}
-     - Add real-world case studies
-     - Provide actionable next steps
-  
-  3. **Depth Adaptation (Level ${courseConfig.depth}):**
-  ${depthExamples[courseConfig.depth] || depthExamples[3]}
-  
-  ## Output Format (JSON)
-  {
-    "title": "Concise descriptive title",
-    "content": "Markdown formatted educational material",
-    "citations": [
-      {
-        "type": "source_type",
-        "title": "Source Title",
-        "url": "https://example.com",
-        "relevance": "Specific justification"
-      }
-    ]
-  }
-  
-  ## Special Rules
-  - Citations only when referencing external concepts
-  - Practical components must match depth level
-  - Use real examples over theoretical explanations`;
-  }
+ 
+  // Updated buildSystemPrompt method
+buildSystemPrompt(courseConfig, contentType) {
+  const depthExamples = {
+    1: `Explain like teaching a complete beginner. Use everyday analogies.`,
+    3: `For intermediate learners: Combine theory with practical case studies.`,
+    5: `Professional level: Focus on current industry practices.`
+  };
 
-  getPracticalComponents(contentType) {
-    const components = {
-      text: "executable code snippets",
-      video: "interactive pause points",
-      interactive: "hands-on exercises"
-    };
-    return components[contentType] || "applied learning components";
-  }
+  return `You're an expert instructional designer creating ${contentType} content. Follow these principles:
 
+## Content Rules
+1. **Section Requirements**:
+   - Omit "Hands-On Exercise" sections
+   - Remove "Preparing for Next Topic: End of Module"
+   - Include code snippets ONLY when essential
+   - Prioritize quality over length
+
+2. **Depth Adaptation (Level ${courseConfig.depth}):**
+${depthExamples[courseConfig.depth] || depthExamples[3]}
+
+## Output Format (JSON)
+{
+  "title": "Concise descriptive title",
+  "content": "Markdown formatted educational material",
+  "citations": [ ... ]
+}
+
+## Special Rules
+- Citations only when referencing external concepts
+- Practical components must match depth level
+- Use real examples over theoretical explanations`;
+}
+
+// Updated buildUserPrompt method
+buildUserPrompt(courseConfig, module, topic, contentType, customPrompt, existingContent) {
+  const context = existingContent.length > 0 
+    ? `\n\nCONTEXT FROM PREVIOUS TOPICS:\n${existingContent.slice(-2).map(c => `- ${c.title}`).join('\n')}` 
+    : '';
+
+  return `Create ${contentType} content for:
+  
+**Course:** ${courseConfig.topic} 
+**Learning Goal:** ${courseConfig.context}
+**Depth:** Level ${courseConfig.depth}/5
+
+**Current Module:** ${module.summary}
+**Current Topic:** ${topic.summary}
+
+**Specific Request:** ${customPrompt}
+${context}
+
+Focus on:
+1. Connecting to prerequisite knowledge
+2. Including essential examples`;
+}
 
  
-  buildUserPrompt(courseConfig, module, topic, contentType, customPrompt, existingContent) {
-    const context = existingContent.length > 0 
-      ? `\n\nCONTEXT FROM PREVIOUS TOPICS:\n${existingContent.slice(-2).map(c => `- ${c.title}`).join('\n')}` 
-      : '';
-  
-    return `Create ${contentType} content for:
-    
-  **Course:** ${courseConfig.topic} 
-  **Learning Goal:** ${courseConfig.context}
-  **Depth:** Level ${courseConfig.depth}/5
-  
-  **Current Module:** ${module.summary}
-  **Current Topic:** ${topic.summary}
-  
-  **Specific Request:** ${customPrompt}
-  ${context}
-  
-  Focus on:
-  1. Connecting to prerequisite knowledge
-  2. Including ${this.getPracticalComponents(contentType)}
-  3. Preparing for next topic: ${this.getNextTopicSummary(module, topic)}`;
-  }
-  
   getNextTopicSummary(module, topic) {
     const topics = module.topics;
     const index = topics.indexOf(topic);

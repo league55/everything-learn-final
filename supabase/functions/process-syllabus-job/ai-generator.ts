@@ -24,8 +24,8 @@ export class AIGenerator {
       properties: {
         modules: {
           type: "array",
-          minItems: courseStructure.modules,
-          maxItems: courseStructure.modules,
+          minItems: 1,
+          maxItems: 10,
           items: {
             type: "object",
             properties: {
@@ -37,8 +37,8 @@ export class AIGenerator {
               },
               topics: {
                 type: "array",
-                minItems: courseStructure.topicsPerModule,
-                maxItems: courseStructure.topicsPerModule,
+                minItems: 1,
+                maxItems: 10,
                 items: {
                   type: "object",
                   properties: {
@@ -123,43 +123,32 @@ export class AIGenerator {
       throw new Error('Invalid JSON response from Perplexity')
     }
   }
+ 
+ 
+ // Updated buildSystemPrompt method
+private buildSystemPrompt(courseStructure: any, depth: number): string {
+  const depthExamples = {
+    1: `Focus: Foundational concepts with everyday analogies`,
+    3: `Focus: Theory + practical case studies. Include 2 real-world examples`,
+    5: `Focus: Current industry practices. Include research papers (post-2022)`
+  };
 
-  private getCourseStructure(depth: number) {
-    const structures = {
-      1: { modules: 3, topicsPerModule: 3 },
-      2: { modules: 3, topicsPerModule: 4 },
-      3: { modules: 4, topicsPerModule: 5 },
-      4: { modules: 4, topicsPerModule: 5 }, // Reduced from 6 to 5
-      5: { modules: 4, topicsPerModule: 5 }  // Reduced from 8 to 5, and modules from 5 to 4
-    }
+  return `You're an expert course designer creating syllabi. Follow these principles:
 
-    return structures[depth as keyof typeof structures] || structures[3]
-  }
+## Pedagogical Guidelines
+1. **Structure Requirements**:
+   - Create around ${courseStructure.modules} modules 
+   - Each module must contain around ${courseStructure.topicsPerModule} topics 
 
-
-  private buildSystemPrompt(courseStructure: any, depth: number): string {
-    const depthExamples = {
-      1: `Focus: Foundational concepts with everyday analogies. Example: "Variables are like labeled boxes" + simple code snippet`,
-      3: `Focus: Theory + practical case studies. Include 2 real-world examples and 1 hands-on exercise`,
-      5: `Focus: Current industry practices. Include research papers (post-2022) and professional tooling examples`
-    };
-  
-    return `You're an expert course designer creating syllabi. Follow these principles:
-  
-  ## Pedagogical Guidelines
-  1. **Progressive Flow**:
-     - Module 1: Foundational principles
-     - Module 2: Core applications
-     - Module 3: Advanced implementations
-     - Module 4: Professional preparation
-
-2. **Practical Integration**:
-   - Include 1 hands-on exercise per module
-   - Add real-world case studies
-   - Provide actionable next steps
+2. **Content Principles**:
+   - Omit "Hands-On Exercise" sections
+   - Remove "Preparing for Next Topic: End of Module" text
+   - Include code snippets ONLY when essential
+   - Prioritize quality over length
 
 3. **Depth Implementation (Level ${depth}):**
 ${depthExamples[depth as keyof typeof depthExamples] || depthExamples[3]}
+
 ## Output Format (JSON)
 {
   "modules": [
@@ -169,7 +158,7 @@ ${depthExamples[depth as keyof typeof depthExamples] || depthExamples[3]}
         {
           "summary": "Topic title",
           "keywords": ["3-5 relevant terms"],
-          "content": "## Learning Objectives\n- Clear outcomes\n\n## Key Concepts\n- Core principles\n\n## Practical Application\n- Real-world examples"
+          "content": "## Learning Objectives\n- Clear outcomes\n\n## Key Concepts\n- Core principles"
         }
       ]
     }
@@ -179,14 +168,19 @@ ${depthExamples[depth as keyof typeof depthExamples] || depthExamples[3]}
 
 ## Special Rules
 - Connect topics to prerequisite knowledge
-- Include ${this.getPracticalComponents(depth)}
-- Prepare for next topic progression`;
+- Include only essential practical examples`;
 }
 
-private getPracticalComponents(depth: number): string {
-  return depth >= 3 
-    ? "executable code snippets for technical topics" 
-    : "interactive discussion prompts";
+private getCourseStructure(depth: number) {
+  const structures = {
+    1: { modules: 3, topicsPerModule: 3 },
+    2: { modules: 3, topicsPerModule: 4 },
+    3: { modules: 4, topicsPerModule: 5 },
+    4: { modules: 4, topicsPerModule: 5 }, // Reduced from 6 to 5
+    5: { modules: 4, topicsPerModule: 5 }  // Reduced from 8 to 5, and modules from 5 to 4
+  }
+
+  return structures[depth as keyof typeof structures] || structures[3]
 }
 
 private buildUserPrompt(courseConfig: CourseConfiguration, courseStructure: any): string {
