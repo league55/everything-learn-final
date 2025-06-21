@@ -8,7 +8,8 @@ import {
   ArrowRight,
   Zap,
   Headphones,
-  CheckCircle
+  CheckCircle,
+  Award
 } from 'lucide-react';
 
 interface RoadmapProps {
@@ -76,6 +77,19 @@ const roadmapSteps: RoadmapStep[] = [
       "Interactive video conversations"
     ],
     color: "from-orange-500 to-red-500"
+  },
+  {
+    id: 5,
+    title: "Certificate of Participation",
+    description: "Receive a blockchain-verified certificate stored permanently on the Algorand blockchain",
+    icon: Award,
+    details: [
+      "Algorand blockchain verification",
+      "Tamper-proof and permanent",
+      "Globally verifiable credentials",
+      "Professional portfolio ready"
+    ],
+    color: "from-green-500 to-emerald-500"
   }
 ];
 
@@ -290,7 +304,7 @@ export function Roadmap({ scrollRef }: RoadmapProps) {
           >
             <Zap className="h-5 w-5" />
             <span>Start Your Journey Today</span>
-            <Headphones className="h-5 w-5" />
+            <Award className="h-5 w-5" />
           </motion.button>
         </motion.div>
       </div>
