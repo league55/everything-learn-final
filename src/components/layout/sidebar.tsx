@@ -15,7 +15,8 @@ import {
   LogOut,
   Loader2,
   Menu,
-  X
+  X,
+  Shield
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -37,6 +38,11 @@ const navigationItems = [
     title: 'Certificates',
     href: '/certificates',
     icon: Award,
+  },
+  {
+    title: 'Verify Certificate',
+    href: '/verify',
+    icon: Shield,
   },
   {
     title: 'Profile',
