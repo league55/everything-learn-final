@@ -241,6 +241,9 @@ export const STORAGE_BUCKETS = {
   INTERACTIVE: 'course-interactive'
 } as const
 
+// Import certificate operations
+import { certificateOperations } from './supabase/db/certificates'
+
 // Database operations
 export const dbOperations = {
   // Create a new course configuration
@@ -279,6 +282,32 @@ export const dbOperations = {
     }
 
     return data || []
+  },
+
+  // Get course by ID (needed for certificate generation)
+  async getCourseById(courseId: string): Promise<CourseConfiguration & { syllabus?: Syllabus } | null> {
+    const { data: course, error: courseError } = await supabase
+      .from('course_configuration')
+      .select('*')
+      .eq('id', courseId)
+      .single()
+
+    if (courseError) {
+      if (courseError.code === 'PGRST116') return null
+      throw new Error(`Failed to fetch course: ${courseError.message}`)
+    }
+
+    // Also fetch syllabus
+    const { data: syllabus } = await supabase
+      .from('syllabus')
+      .select('*')
+      .eq('course_configuration_id', courseId)
+      .single()
+
+    return {
+      ...course,
+      syllabus: syllabus || undefined
+    }
   },
 
   // Get all courses (including generating ones)
@@ -560,11 +589,12 @@ export const dbOperations = {
     return data
   },
 
-  // Update user progress in a course
+  // Update user progress in a course with optional examination results
   async updateCourseProgress(
     enrollmentId: string, 
     moduleIndex: number,
-    completed: boolean = false
+    completed: boolean = false,
+    examinationResults?: any
   ): Promise<UserEnrollment> {
     const updateData: any = {
       current_module_index: moduleIndex
@@ -573,6 +603,36 @@ export const dbOperations = {
     if (completed) {
       updateData.status = 'completed'
       updateData.completed_at = new Date().toISOString()
+
+      // If examination results provided and course is completed, trigger certificate generation
+      if (examinationResults) {
+        try {
+          // Get enrollment details to get course and student info
+          const { data: enrollment } = await supabase
+            .from('user_enrollments')
+            .select('user_id, course_configuration_id')
+            .eq('id', enrollmentId)
+            .single()
+
+          if (enrollment) {
+            // Import certificate API dynamically to avoid circular dependencies
+            const { getCertificateAPI } = await import('@/blockchain/api/certificate-api')
+            const certificateAPI = await getCertificateAPI()
+            
+            // Generate certificate
+            await certificateAPI.onExaminationCompletion(
+              enrollment.user_id,
+              enrollment.course_configuration_id,
+              examinationResults
+            )
+            
+            console.log('Certificate generated successfully for course completion')
+          }
+        } catch (certError) {
+          console.error('Failed to generate certificate:', certError)
+          // Don't fail the course completion, just log the error
+        }
+      }
     }
 
     const { data, error } = await supabase
@@ -930,5 +990,11 @@ export const dbOperations = {
     if (error) {
       throw new Error(`Failed to delete file: ${error.message}`)
     }
-  }
+  },
+
+  // Certificate operations - expose certificate operations from the separate module
+  ...certificateOperations,
+
+  // Add supabase client for direct access when needed
+  supabase
 }
