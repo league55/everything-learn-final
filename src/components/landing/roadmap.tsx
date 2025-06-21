@@ -7,7 +7,7 @@ import {
   Video,
   ArrowRight,
   Zap,
-  Brain,
+  Headphones,
   CheckCircle
 } from 'lucide-react';
 
@@ -53,16 +53,16 @@ const roadmapSteps: RoadmapStep[] = [
   },
   {
     id: 3,
-    title: "Get AI Assistance",
-    description: "Struggling with concepts? Our AI tutor provides instant help and explanations",
-    icon: MessageCircleQuestion,
+    title: "Generate Audio Podcast",
+    description: "Listen to your course content as an AI-generated podcast using ElevenLabs technology",
+    icon: Headphones,
     details: [
-      "24/7 AI tutor availability",
-      "Contextual explanations",
-      "Personalized hints",
-      "Concept clarification"
+      "AI-generated audio content",
+      "Natural voice synthesis",
+      "Listen while commuting",
+      "Multiple voice options"
     ],
-    color: "from-green-500 to-emerald-500"
+    color: "from-purple-500 to-indigo-500"
   },
   {
     id: 4,
@@ -70,10 +70,10 @@ const roadmapSteps: RoadmapStep[] = [
     description: "Complete your journey with a final conversation with an AI video tutor",
     icon: Video,
     details: [
-      "Face-to-face AI interaction",
+      "Powered by Tavus AI avatars",
       "Knowledge assessment",
       "Personalized feedback",
-      "Course completion certificate"
+      "Interactive video conversations"
     ],
     color: "from-orange-500 to-red-500"
   }
@@ -290,7 +290,7 @@ export function Roadmap({ scrollRef }: RoadmapProps) {
           >
             <Zap className="h-5 w-5" />
             <span>Start Your Journey Today</span>
-            <Brain className="h-5 w-5" />
+            <Headphones className="h-5 w-5" />
           </motion.button>
         </motion.div>
       </div>
