@@ -79,14 +79,15 @@ export function LandingPage() {
         </motion.div>
       </div>
 
-      {/* Origin Story Section */}
-      <div id="origin-section">
-        <OriginStorySection />
-      </div>
-
       {/* Roadmap Timeline Section */}
       <div id="roadmap-section" ref={roadmapRef}>
         <Roadmap scrollRef={roadmapRef} />
+      </div>
+
+      
+      {/* Origin Story Section */}
+      <div id="origin-section">
+        <OriginStorySection />
       </div>
     </div>
   )
