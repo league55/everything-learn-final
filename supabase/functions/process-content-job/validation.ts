@@ -12,7 +12,7 @@ export const CitationSchema = z.object({
   doi: z.string().optional(),
   isbn: z.string().optional(),
   access_date: z.string(),
-  relevance_score: z.number().min(0).max(1),
+  relevance: z.string().min(10).max(500), // Changed from relevance_score (number) to relevance (string)
   excerpt: z.string().max(500).optional(),
 })
 
