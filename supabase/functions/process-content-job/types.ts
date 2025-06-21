@@ -81,7 +81,7 @@ export interface Citation {
   doi?: string
   isbn?: string
   access_date: string
-  relevance_score: number
+  relevance: string
   excerpt?: string
 }
 

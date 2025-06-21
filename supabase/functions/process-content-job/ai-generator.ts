@@ -42,150 +42,88 @@ export class AIGenerator {
     };
   }
   buildSystemPrompt(courseConfig, contentType) {
-    const depthDescriptions = {
-      1: 'beginner-friendly with simple explanations and basic examples',
-      2: 'introductory level with clear explanations and practical examples',
-      3: 'intermediate level with detailed explanations and real-world applications',
-      4: 'advanced level with comprehensive coverage and academic rigor',
-      5: 'professional level with cutting-edge insights and industry applications'
+    const depthExamples = {
+      1: `Explain like teaching a complete beginner. Use everyday analogies (e.g., "Variables are like labeled boxes"). Include 1 simple code snippet.`,
+      3: `For intermediate learners: Combine theory with practical case studies. Include 2-3 real-world examples and 1 hands-on exercise.`,
+      5: `Professional level: Focus on current industry practices. Include research papers (post-2022) and professional tooling examples.`
     };
-    return `You are an expert educational content creator with access to comprehensive academic and professional sources. Create high-quality learning content that is ${depthDescriptions[courseConfig.depth]}.
-
-CRITICAL REQUIREMENTS:
-1. You must respond with a valid JSON object matching this exact structure:
-{
-  "title": "Engaging and descriptive title (10-200 characters)",
-  "content": "Comprehensive markdown content (500-8000 characters)",
-  "description": "Brief overview of the content (20-500 characters, optional)",
-  "citations": [
-    {
-      "id": "unique_citation_id",
-      "type": "academic|web|book|article|documentation",
-      "title": "Source title",
-      "authors": ["Author Name"],
-      "url": "https://example.com",
-      "publication_date": "2024-01-01",
-      "publisher": "Publisher Name",
-      "doi": "10.1000/example",
-      "access_date": "${new Date().toISOString().split('T')[0]}",
-      "relevance_score": 0.95,
-      "excerpt": "Brief relevant excerpt from source"
-    }
-  ]
-}
-
-CONTENT QUALITY STANDARDS:
-- Content must be 500-8000 characters (manageable for context windows)
-- Include 3-15 high-quality citations from authoritative sources
-- Citations must be real, verifiable sources when possible
-- Use proper markdown formatting with headers, lists, code blocks, etc.
-- Include practical examples and applications
-- Ensure content flows logically and builds understanding progressively
-
-CITATION REQUIREMENTS:
-- Prioritize recent sources (last 5 years when possible)
-- Include a mix of source types: academic papers, official documentation, reputable websites
-- Each citation must have a relevance score (0.0-1.0) indicating how directly it supports the content
-- Include brief excerpts that show how the source supports your content
-- For academic sources, include DOI when available
-- For web sources, use reputable domains (.edu, .org, official company sites)
-
-DEPTH LEVEL ${courseConfig.depth} GUIDELINES:
-${this.getDepthGuidelines(courseConfig.depth)}
-
-CONTENT TYPE: ${contentType.toUpperCase()}
-${this.getContentTypeGuidelines(contentType)}`;
+  
+    return `You're an expert instructional designer creating ${contentType} content. Follow these principles:
+  
+  ## Pedagogical Guidelines
+  1. **Progressive Difficulty**:
+     - Module 1: Foundational principles
+     - Module 2: Core applications
+     - Module 3: Advanced implementations
+  
+  2. **Practical Focus**:
+     - Include ${this.getPracticalComponents(contentType)}
+     - Add real-world case studies
+     - Provide actionable next steps
+  
+  3. **Depth Adaptation (Level ${courseConfig.depth}):**
+  ${depthExamples[courseConfig.depth] || depthExamples[3]}
+  
+  ## Output Format (JSON)
+  {
+    "title": "Concise descriptive title",
+    "content": "Markdown formatted educational material",
+    "citations": [
+      {
+        "type": "source_type",
+        "title": "Source Title",
+        "url": "https://example.com",
+        "relevance": "Specific justification"
+      }
+    ]
   }
-  getDepthGuidelines(depth) {
-    const guidelines = {
-      1: `- Use simple, accessible language
-- Focus on fundamental concepts and basic understanding
-- Include plenty of analogies and everyday examples
-- Avoid technical jargon unless clearly explained
-- Provide step-by-step explanations`,
-      2: `- Use clear, straightforward language with some technical terms
-- Include practical examples and hands-on applications
-- Explain concepts with real-world context
-- Provide actionable insights and tips
-- Balance theory with practice`,
-      3: `- Use professional language with appropriate technical terminology
-- Include detailed explanations and comprehensive coverage
-- Provide case studies and real-world applications
-- Reference industry standards and best practices
-- Balance depth with accessibility`,
-      4: `- Use advanced terminology and academic language
-- Include comprehensive theoretical background
-- Reference current research and academic literature
-- Provide complex examples and edge cases
-- Assume strong foundational knowledge`,
-      5: `- Use expert-level language and cutting-edge terminology
-- Include latest research and industry developments
-- Reference peer-reviewed academic sources extensively
-- Provide professional insights and advanced applications
-- Assume expert-level background knowledge`
+  
+  ## Special Rules
+  - Citations only when referencing external concepts
+  - Practical components must match depth level
+  - Use real examples over theoretical explanations`;
+  }
+
+  getPracticalComponents(contentType) {
+    const components = {
+      text: "executable code snippets",
+      video: "interactive pause points",
+      interactive: "hands-on exercises"
     };
-    return guidelines[depth] || guidelines[3];
+    return components[contentType] || "applied learning components";
   }
-  getContentTypeGuidelines(contentType) {
-    const guidelines = {
-      text: `Create comprehensive written content with:
-- Clear structure using markdown headers
-- Bullet points and numbered lists for key information
-- Code examples in appropriate language blocks
-- Emphasis on important concepts using **bold** and *italic*
-- Include practical exercises or thought questions`,
-      image: `Create detailed specifications for educational images:
-- Describe visual elements that would enhance understanding
-- Specify diagram types, charts, or infographic layouts
-- Include alt text descriptions for accessibility
-- Suggest interactive elements if applicable`,
-      video: `Create comprehensive video content specifications:
-- Detailed script with timing and visual cues
-- Specify demonstrations, animations, or screen recordings
-- Include interactive elements and pause points
-- Provide transcript and accessibility considerations`,
-      audio: `Create detailed audio content specifications:
-- Full script with pacing and emphasis notes
-- Specify background music or sound effects
-- Include interactive elements and timestamps
-- Provide transcript and accessibility features`,
-      document: `Create structured document content:
-- Professional formatting with clear sections
-- Include templates, worksheets, or reference materials
-- Specify downloadable resources and formats
-- Ensure content is printer-friendly`,
-      interactive: `Create interactive learning experience specifications:
-- Detailed interaction design and user flow
-- Specify quizzes, simulations, or hands-on exercises
-- Include feedback mechanisms and progress tracking
-- Ensure accessibility and mobile compatibility`
-    };
-    return guidelines[contentType] || guidelines.text;
-  }
+
+
+ 
   buildUserPrompt(courseConfig, module, topic, contentType, customPrompt, existingContent) {
-    const existingContentSummary = existingContent.length > 0 ? `\n\nEXISTING CONTENT FOR THIS TOPIC:\n${existingContent.map((content)=>`- ${content.title}: ${content.description || 'No description'}`).join('\n')}\n\nEnsure your content complements but doesn't duplicate existing content.` : '';
-    return `Create ${contentType} content for this learning context:
-
-COURSE: ${courseConfig.topic}
-COURSE CONTEXT: ${courseConfig.context}
-DEPTH LEVEL: ${courseConfig.depth}/5
-
-MODULE: ${module.summary}
-TOPIC: ${topic.summary}
-TOPIC KEYWORDS: ${topic.keywords.join(', ')}
-
-EXISTING TOPIC CONTENT: ${topic.content}
-
-SPECIFIC REQUEST: ${customPrompt}${existingContentSummary}
-
-Generate comprehensive ${contentType} content that:
-1. Builds upon the existing topic foundation
-2. Addresses the specific request
-3. Maintains consistency with the course depth level
-4. Includes authoritative citations and sources
-5. Provides practical value to learners
-
-Remember to include proper citations from authoritative sources and ensure all content meets the quality standards specified in the system prompt.`;
+    const context = existingContent.length > 0 
+      ? `\n\nCONTEXT FROM PREVIOUS TOPICS:\n${existingContent.slice(-2).map(c => `- ${c.title}`).join('\n')}` 
+      : '';
+  
+    return `Create ${contentType} content for:
+    
+  **Course:** ${courseConfig.topic} 
+  **Learning Goal:** ${courseConfig.context}
+  **Depth:** Level ${courseConfig.depth}/5
+  
+  **Current Module:** ${module.summary}
+  **Current Topic:** ${topic.summary}
+  
+  **Specific Request:** ${customPrompt}
+  ${context}
+  
+  Focus on:
+  1. Connecting to prerequisite knowledge
+  2. Including ${this.getPracticalComponents(contentType)}
+  3. Preparing for next topic: ${this.getNextTopicSummary(module, topic)}`;
+  }
+  
+  getNextTopicSummary(module, topic) {
+    const topics = module.topics;
+    const index = topics.indexOf(topic);
+    return index < topics.length - 1 
+      ? topics[index + 1].summary 
+      : "End of module";
   }
   truncateUserPrompt(userPrompt, maxLength) {
     if (userPrompt.length <= maxLength) {
@@ -277,18 +215,16 @@ Remember to include proper citations from authoritative sources and ensure all c
                 format: "date",
                 description: "Date accessed"
               },
-              relevance_score: {
-                type: "number",
-                minimum: 0,
-                maximum: 1,
-                description: "Relevance score (0.0-1.0)"
+              relevance: {
+                type: "string",
+                description: "Brief justification of source relevance"
               },
               excerpt: {
                 type: "string",
                 description: "Brief relevant excerpt from source"
               }
             },
-            required: ["id", "type", "title", "relevance_score"]
+            required: ["id", "type", "title", "relevance"]
           }
         }
       },

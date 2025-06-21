@@ -1,14 +1,14 @@
 import type { CourseConfiguration, GeneratedSyllabus } from './types.ts'
 
 export class AIGenerator {
-  private openaiApiKey: string
+  private perplexityApiKey: string
 
   constructor() {
-    const apiKey = Deno.env.get('OPENAI_API_KEY')
+    const apiKey = Deno.env.get('PERPLEXITY_API_KEY')
     if (!apiKey) {
-      throw new Error('OpenAI API key not configured')
+      throw new Error('Perplexity API key not configured')
     }
-    this.openaiApiKey = apiKey
+    this.perplexityApiKey = apiKey
   }
 
   async generateSyllabus(courseConfig: CourseConfiguration): Promise<GeneratedSyllabus> {
@@ -18,40 +18,109 @@ export class AIGenerator {
     const systemPrompt = this.buildSystemPrompt(courseStructure, courseConfig.depth)
     const userPrompt = this.buildUserPrompt(courseConfig, courseStructure)
 
-    console.log('Making OpenAI API request...')
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Define JSON schema for syllabus structure
+    const syllabusSchema = {
+      type: "object",
+      properties: {
+        modules: {
+          type: "array",
+          minItems: courseStructure.modules,
+          maxItems: courseStructure.modules,
+          items: {
+            type: "object",
+            properties: {
+              summary: {
+                type: "string",
+                minLength: 20,
+                maxLength: 300,
+                description: "Module title and comprehensive description"
+              },
+              topics: {
+                type: "array",
+                minItems: courseStructure.topicsPerModule,
+                maxItems: courseStructure.topicsPerModule,
+                items: {
+                  type: "object",
+                  properties: {
+                    summary: {
+                      type: "string",
+                      minLength: 10,
+                      maxLength: 200,
+                      description: "Topic title and brief description"
+                    },
+                    keywords: {
+                      type: "array",
+                      minItems: 3,
+                      maxItems: 10,
+                      items: {
+                        type: "string"
+                      },
+                      description: "Keywords for the topic"
+                    },
+                    content: {
+                      type: "string",
+                      minLength: 100,
+                      maxLength: 2000,
+                      description: "Detailed markdown content explaining the topic"
+                    }
+                  },
+                  required: ["summary", "keywords", "content"]
+                }
+              }
+            },
+            required: ["summary", "topics"]
+          }
+        },
+        keywords: {
+          type: "array",
+          minItems: 5,
+          maxItems: 20,
+          items: {
+            type: "string"
+          },
+          description: "Course-level keywords for searchability"
+        }
+      },
+      required: ["modules", "keywords"]
+    }
+
+    console.log('Making Perplexity API request...')
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.openaiApiKey}`,
+        'Authorization': `Bearer ${this.perplexityApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'sonar-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
         max_tokens: 4000,
-        response_format: { type: 'json_object' }
+        response_format: {
+          type: "json_schema",
+          json_schema: { schema: syllabusSchema }
+        }
       }),
     })
 
     if (!response.ok) {
       const error = await response.json()
-      console.error('OpenAI API error:', error)
-      throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`)
+      console.error('Perplexity API error:', error)
+      throw new Error(`Perplexity API error: ${error.error?.message || 'Unknown error'}`)
     }
 
     const data = await response.json()
     const content = data.choices[0].message.content
-    console.log('OpenAI response received, parsing...')
+    console.log('Perplexity response received, parsing...')
 
     try {
       return JSON.parse(content)
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', content)
-      throw new Error('Invalid JSON response from OpenAI')
+      console.error('Failed to parse Perplexity response:', content)
+      throw new Error('Invalid JSON response from Perplexity')
     }
   }
 
@@ -67,81 +136,68 @@ export class AIGenerator {
     return structures[depth as keyof typeof structures] || structures[3]
   }
 
-  private getDepthDescription(depth: number): string {
-    const descriptions = {
-      1: 'Basic overview, should be able to cover in an hour',
-      2: 'Basic overview, should be able to cover in 2 hours',
-      3: 'Average depth. Hobby level',
-      4: 'High school / university level',
-      5: 'To be used professionally'
-    }
-
-    return descriptions[depth as keyof typeof descriptions] || descriptions[3]
-  }
 
   private buildSystemPrompt(courseStructure: any, depth: number): string {
-    return `You are an expert course designer with access to advanced academic and professional sources. Create a comprehensive syllabus based on the user's requirements.
+    const depthExamples = {
+      1: `Focus: Foundational concepts with everyday analogies. Example: "Variables are like labeled boxes" + simple code snippet`,
+      3: `Focus: Theory + practical case studies. Include 2 real-world examples and 1 hands-on exercise`,
+      5: `Focus: Current industry practices. Include research papers (post-2022) and professional tooling examples`
+    };
+  
+    return `You're an expert course designer creating syllabi. Follow these principles:
+  
+  ## Pedagogical Guidelines
+  1. **Progressive Flow**:
+     - Module 1: Foundational principles
+     - Module 2: Core applications
+     - Module 3: Advanced implementations
+     - Module 4: Professional preparation
 
-IMPORTANT: You must respond with a valid JSON object that matches this exact structure:
+2. **Practical Integration**:
+   - Include 1 hands-on exercise per module
+   - Add real-world case studies
+   - Provide actionable next steps
+
+3. **Depth Implementation (Level ${depth}):**
+${depthExamples[depth as keyof typeof depthExamples] || depthExamples[3]}
+## Output Format (JSON)
 {
   "modules": [
     {
-      "summary": "Module title and comprehensive description (MINIMUM 20 characters, MAXIMUM 300 characters)",
+      "summary": "Module title and description",
       "topics": [
         {
-          "summary": "Topic title and brief description (minimum 10 characters, maximum 200 characters)", 
-          "keywords": ["keyword1", "keyword2", "keyword3"],
-          "content": "Detailed markdown content explaining the topic, including learning objectives, key concepts, and practical applications (minimum 100 characters, maximum 2000 characters)"
+          "summary": "Topic title",
+          "keywords": ["3-5 relevant terms"],
+          "content": "## Learning Objectives\n- Clear outcomes\n\n## Key Concepts\n- Core principles\n\n## Practical Application\n- Real-world examples"
         }
       ]
     }
   ],
-  "keywords": ["course-level", "keywords", "for", "searchability"]
+  "keywords": ["5-7 course-level terms"]
 }
 
-CRITICAL LENGTH REQUIREMENTS:
-- Module summary: MUST be at least 20 characters and at most 300 characters
-- Topic summary: MUST be at least 10 characters and at most 200 characters  
-- Topic content: MUST be at least 100 characters and at most 2000 characters
-- Keywords array: MUST have 5-20 course-level keywords
-- Topic keywords: MUST have 3-10 keywords per topic
+## Special Rules
+- Connect topics to prerequisite knowledge
+- Include ${this.getPracticalComponents(depth)}
+- Prepare for next topic progression`;
+}
 
-Course Structure Requirements:
-- ${courseStructure.modules} modules total
-- ${courseStructure.topicsPerModule} topics per module
-- Content depth level: ${depth}/5 (${this.getDepthDescription(depth)})
+private getPracticalComponents(depth: number): string {
+  return depth >= 3 
+    ? "executable code snippets for technical topics" 
+    : "interactive discussion prompts";
+}
 
-Content Guidelines Based on Depth Level:
-- Depth 1: Use accessible language, focus on fundamental concepts, provide simple examples
-- Depth 2: Include more detailed explanations, introduce intermediate concepts, provide practical applications
-- Depth 3: Present comprehensive coverage, include analytical thinking, provide real-world case studies
-- Depth 4: Use advanced terminology, reference current research, include complex problem-solving
-- Depth 5: Reference academic literature, include cutting-edge developments, focus on professional application
+private buildUserPrompt(courseConfig: CourseConfiguration, courseStructure: any): string {
+  return `Create a ${courseStructure.modules}-module syllabus for:
+**Topic:** ${courseConfig.topic}
+**Learning Goal:** ${courseConfig.context}
+**Depth Level:** ${courseConfig.depth}/5
 
-Quality Standards:
-- Draw from the most authoritative and current sources available
-- Adjust complexity and terminology to match the specified depth level
-- Each topic's content should be 100-500 words of detailed markdown
-- Include practical examples and real-world applications appropriate to the level
-- Progressive difficulty within and across modules
-- Clear learning objectives for each topic
-- Relevant keywords for discoverability
-- Cite or reference high-quality sources when appropriate for the depth level`
-  }
-
-  private buildUserPrompt(courseConfig: CourseConfiguration, courseStructure: any): string {
-    return `Create a syllabus for:
-Topic: ${courseConfig.topic}
-Context: ${courseConfig.context}
-Depth Level: ${courseConfig.depth}/5
-
-Generate a structured syllabus with ${courseStructure.modules} modules and ${courseStructure.topicsPerModule} topics per module. 
-
-REMEMBER: Ensure all content meets the minimum length requirements:
-- Module summaries must be at least 20 characters
-- Topic summaries must be at least 10 characters
-- Topic content must be at least 100 characters
-
-Adjust the content complexity, terminology, and source sophistication to match depth level ${courseConfig.depth}. Use advanced sources but present the information at the appropriate level for the learner.`
-  }
+## Special Requests
+- First module must establish foundational knowledge
+- Final module should prepare for professional application
+- Include 1 industry-relevant case study`;
+}
 }
