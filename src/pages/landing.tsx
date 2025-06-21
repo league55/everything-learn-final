@@ -3,6 +3,7 @@ import { CourseForm } from '@/components/landing/course-form'
 import { OriginStorySection } from '@/components/landing/origin-story-section'
 import { Roadmap } from '@/components/landing/roadmap'
 import { ShootingStars } from '@/components/landing/shoting-stars'
+import { BoltBadge } from '@/components/landing/bolt-badge'
 import { motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import { useRef } from 'react'
@@ -12,6 +13,9 @@ export function LandingPage() {
 
   return (
     <div className="relative">
+      {/* Bolt Badge */}
+      <BoltBadge />
+
       {/* Hero Section */}
       <div id="hero-section" className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
         <ShootingStars
