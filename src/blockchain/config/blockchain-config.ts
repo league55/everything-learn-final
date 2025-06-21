@@ -2,16 +2,16 @@ import algosdk from 'algosdk';
 import { BlockchainConfig } from '../types/certificate-types';
 
 export const getBlockchainConfig = (): BlockchainConfig => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = import.meta.env.NODE_ENV === 'production';
   
   return {
     network: isProduction ? 'mainnet' : 'testnet',
-    algodServer: process.env.VITE_ALGOD_SERVER || 'https://testnet-api.algonode.cloud',
+    algodServer: import.meta.env.VITE_ALGOD_SERVER || 'https://testnet-api.algonode.cloud',
     algodPort: 443,
-    algodToken: process.env.VITE_ALGOD_TOKEN || '',
-    appId: parseInt(process.env.VITE_CERTIFICATE_APP_ID || '0'),
-    creatorAddress: process.env.VITE_CREATOR_ADDRESS || '',
-    creatorMnemonic: process.env.VITE_CREATOR_MNEMONIC || ''
+    algodToken: import.meta.env.VITE_ALGOD_TOKEN || '',
+    appId: parseInt(import.meta.env.VITE_CERTIFICATE_APP_ID || '0'),
+    creatorAddress: import.meta.env.VITE_CREATOR_ADDRESS || '',
+    creatorMnemonic: import.meta.env.VITE_CREATOR_MNEMONIC || ''
   };
 };
 
