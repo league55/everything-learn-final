@@ -2,9 +2,9 @@ import { validateContentLength } from './validation.ts';
 export class AIGenerator {
   openaiApiKey;
   constructor(){
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    const apiKey = Deno.env.get('PERPLEXITY_API_KEY');
     if (!apiKey) {
-      throw new Error('OpenAI API key not configured');
+      throw new Error('Perplexity API key not configured');
     }
     this.openaiApiKey = apiKey;
   }
@@ -203,15 +203,106 @@ Remember to include proper citations from authoritative sources and ensure all c
     return truncated + '\n\n[Note: Context truncated due to length limitations]';
   }
   async callOpenAI(systemPrompt, userPrompt) {
-    console.log('Making OpenAI API request...');
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    console.log('Making Perplexity API request...');
+    
+    // Define JSON schema for content structure
+    const contentSchema = {
+      type: "object",
+      properties: {
+        title: {
+          type: "string",
+          minLength: 10,
+          maxLength: 200,
+          description: "Engaging and descriptive title"
+        },
+        content: {
+          type: "string",
+          minLength: 500,
+          maxLength: 8000,
+          description: "Comprehensive markdown content"
+        },
+        description: {
+          type: "string",
+          minLength: 20,
+          maxLength: 500,
+          description: "Brief overview of the content"
+        },
+        citations: {
+          type: "array",
+          minItems: 3,
+          maxItems: 15,
+          items: {
+            type: "object",
+            properties: {
+              id: {
+                type: "string",
+                description: "Unique citation ID"
+              },
+              type: {
+                type: "string",
+                enum: ["academic", "web", "book", "article", "documentation"],
+                description: "Type of source"
+              },
+              title: {
+                type: "string",
+                description: "Source title"
+              },
+              authors: {
+                type: "array",
+                items: {
+                  type: "string"
+                },
+                description: "Author names"
+              },
+              url: {
+                type: "string",
+                format: "uri",
+                description: "Source URL"
+              },
+              publication_date: {
+                type: "string",
+                format: "date",
+                description: "Publication date"
+              },
+              publisher: {
+                type: "string",
+                description: "Publisher name"
+              },
+              doi: {
+                type: "string",
+                description: "Digital Object Identifier"
+              },
+              access_date: {
+                type: "string",
+                format: "date",
+                description: "Date accessed"
+              },
+              relevance_score: {
+                type: "number",
+                minimum: 0,
+                maximum: 1,
+                description: "Relevance score (0.0-1.0)"
+              },
+              excerpt: {
+                type: "string",
+                description: "Brief relevant excerpt from source"
+              }
+            },
+            required: ["id", "type", "title", "relevance_score"]
+          }
+        }
+      },
+      required: ["title", "content", "citations"]
+    };
+
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.openaiApiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'sonar-pro',
         messages: [
           {
             role: 'system',
@@ -225,18 +316,19 @@ Remember to include proper citations from authoritative sources and ensure all c
         temperature: 0.7,
         max_tokens: 4000,
         response_format: {
-          type: 'json_object'
+          type: "json_schema",
+          json_schema: { schema: contentSchema }
         }
       })
     });
     if (!response.ok) {
       const error = await response.json();
-      console.error('OpenAI API error:', error);
-      throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
+      console.error('Perplexity API error:', error);
+      throw new Error(`Perplexity API error: ${error.error?.message || 'Unknown error'}`);
     }
     const data = await response.json();
     const content = data.choices[0].message.content;
-    console.log('OpenAI response received, parsing...');
+    console.log('Perplexity response received, parsing...');
     try {
       const parsedContent = JSON.parse(content);
       // Ensure citations have access_date if missing
@@ -248,8 +340,8 @@ Remember to include proper citations from authoritative sources and ensure all c
       }
       return parsedContent;
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', content);
-      throw new Error('Invalid JSON response from OpenAI');
+      console.error('Failed to parse Perplexity response:', content);
+      throw new Error('Invalid JSON response from Perplexity');
     }
   }
 }

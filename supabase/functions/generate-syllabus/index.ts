@@ -108,9 +108,9 @@ Deno.serve(async (req)=>{
   }
 });
 async function generateSyllabusWithAI(courseConfig) {
-  const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!openaiApiKey) {
-    throw new Error('OpenAI API key not configured');
+  const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+  if (!perplexityApiKey) {
+    throw new Error('Perplexity API key not configured');
   }
   // Determine course structure based on depth
   const courseStructure = getCourseStructure(courseConfig.depth);
@@ -152,6 +152,16 @@ Content Guidelines Based on Depth Level:
 - Depth 4: Use advanced terminology, reference current research, include complex problem-solving
 - Depth 5: Reference academic literature, include cutting-edge developments, focus on professional application
 
+Content Generation Strategy:
+1. Deconstruct the Request: Analyze the user's requested Topic and Context. Identify the core concepts and the user's learning goal.
+2. Logical Structure: Organize the course into a logical progression. Start with foundational concepts and build towards more advanced topics. For example:
+    - For a topic like "Introduction to X," start with "What is X?" and "Why is X important?".
+    - For a topic like "X for beginners," focus on core features and practical first steps.
+    - For a topic like "Overview of X's capabilities," each module should focus on a distinct capability. For "ElevenLabs capabilities overview", modules should cover Text-to-Speech, Speech-to-Speech, Voice Cloning, etc.
+    - For advanced topics, assume foundational knowledge and dive into specific, complex areas.
+3. Action-Oriented Modules: Frame module and topic summaries to be descriptive and action-oriented. Instead of a generic "Advanced Topics", use something like "Mastering Advanced Techniques in X".
+4. Practical Relevance: Ensure the content is not just theoretical. The content for each topic should explain how to apply the knowledge. Use examples, and for technical topics, consider including pseudo-code or code snippets.
+
 Quality Standards:
 - Draw from the most authoritative and current sources available
 - Adjust complexity and terminology to match the specified depth level
@@ -174,14 +184,81 @@ REMEMBER: Ensure all content meets the minimum length requirements:
 - Topic content must be at least 100 characters
 
 Adjust the content complexity, terminology, and source sophistication to match depth level ${courseConfig.depth}. Use advanced sources but present the information at the appropriate level for the learner.`;
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+
+  // Define JSON schema for syllabus structure
+  const syllabusSchema = {
+    type: "object",
+    properties: {
+      modules: {
+        type: "array",
+        minItems: courseStructure.modules,
+        maxItems: courseStructure.modules,
+        items: {
+          type: "object",
+          properties: {
+            summary: {
+              type: "string",
+              minLength: 20,
+              maxLength: 300,
+              description: "Module title and comprehensive description"
+            },
+            topics: {
+              type: "array",
+              minItems: courseStructure.topicsPerModule,
+              maxItems: courseStructure.topicsPerModule,
+              items: {
+                type: "object",
+                properties: {
+                  summary: {
+                    type: "string",
+                    minLength: 10,
+                    maxLength: 200,
+                    description: "Topic title and brief description"
+                  },
+                  keywords: {
+                    type: "array",
+                    minItems: 3,
+                    maxItems: 10,
+                    items: {
+                      type: "string"
+                    },
+                    description: "Keywords for the topic"
+                  },
+                  content: {
+                    type: "string",
+                    minLength: 100,
+                    maxLength: 2000,
+                    description: "Detailed markdown content explaining the topic"
+                  }
+                },
+                required: ["summary", "keywords", "content"]
+              }
+            }
+          },
+          required: ["summary", "topics"]
+        }
+      },
+      keywords: {
+        type: "array",
+        minItems: 5,
+        maxItems: 20,
+        items: {
+          type: "string"
+        },
+        description: "Course-level keywords for searchability"
+      }
+    },
+    required: ["modules", "keywords"]
+  };
+
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${openaiApiKey}`,
+      'Authorization': `Bearer ${perplexityApiKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: 'sonar-pro',
       messages: [
         {
           role: 'system',
@@ -192,24 +269,25 @@ Adjust the content complexity, terminology, and source sophistication to match d
           content: userPrompt
         }
       ],
-      temperature: 0.7,
       max_tokens: 4000,
+      temperature: 0.7,
       response_format: {
-        type: 'json_object'
+        type: "json_schema",
+        json_schema: { schema: syllabusSchema }
       }
     })
   });
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
+    throw new Error(`Perplexity API error: ${error.error?.message || 'Unknown error'}`);
   }
   const data = await response.json();
   const content = data.choices[0].message.content;
   try {
     return JSON.parse(content);
   } catch (parseError) {
-    console.error('Failed to parse OpenAI response:', content);
-    throw new Error('Invalid JSON response from OpenAI');
+    console.error('Failed to parse Perplexity response:', content);
+    throw new Error('Invalid JSON response from Perplexity');
   }
 }
 function getCourseStructure(depth) {
