@@ -177,6 +177,3 @@ export const certificateOperations = {
     };
   }
 };
-
-// Add to main dbOperations export
-export { certificateOperations };
