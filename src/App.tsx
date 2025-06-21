@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/auth/protected-route'
 import { LandingPage } from '@/pages/landing'
 import { CoursesPage } from '@/pages/courses'
 import { ProfilePage } from '@/pages/profile'
+import { CertificatesPage } from '@/pages/certificates'
 import { LoginPage } from '@/pages/auth/login'
 import { SignUpPage } from '@/pages/auth/signup'
 import { ForgotPasswordPage } from '@/pages/auth/forgot-password'
@@ -27,6 +28,7 @@ function App() {
             <Route path="/" element={<MobileLayout />}>
               <Route index element={<LandingPage />} />
               <Route path="courses" element={<CoursesPage />} />
+              <Route path="certificates" element={<CertificatesPage />} />
               <Route 
                 path="profile" 
                 element={
