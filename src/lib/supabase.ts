@@ -418,7 +418,6 @@ export const dbOperations = {
       // Determine generation status
       let generation_status: 'generating' | 'completed' | 'failed' = 'generating'
       let generation_error: string | undefined
-      let generation_progress: number | undefined
 
       if (syllabus) {
         if (syllabus.status === 'completed') {
@@ -426,22 +425,27 @@ export const dbOperations = {
         } else if (syllabus.status === 'failed') {
           generation_status = 'failed'
           generation_error = generationJob?.error_message || 'Generation failed'
+          
+          // Check if it's a content violation and provide user-friendly message
+          if (generationJob?.error_message?.includes('CONTENT_VIOLATION')) {
+            const match = generationJob.error_message.match(/CONTENT_VIOLATION: (.+)/)
+            generation_error = match ? match[1] : 'This topic doesn\'t meet our content guidelines.'
+          }
         } else {
           generation_status = 'generating'
-          // Calculate rough progress based on job status
-          if (generationJob?.status === 'processing') {
-            generation_progress = 50
-          } else if (generationJob?.status === 'pending') {
-            generation_progress = 10
-          }
         }
       } else if (generationJob) {
         if (generationJob.status === 'failed') {
           generation_status = 'failed'
           generation_error = generationJob.error_message || 'Generation failed'
+          
+          // Check if it's a content violation and provide user-friendly message
+          if (generationJob.error_message?.includes('CONTENT_VIOLATION')) {
+            const match = generationJob.error_message.match(/CONTENT_VIOLATION: (.+)/)
+            generation_error = match ? match[1] : 'This topic doesn\'t meet our content guidelines.'
+          }
         } else {
           generation_status = 'generating'
-          generation_progress = generationJob.status === 'processing' ? 50 : 10
         }
       }
 
@@ -452,7 +456,6 @@ export const dbOperations = {
         enrollment_count: enrollmentCount,
         user_enrollment: userEnrollment,
         generation_status,
-        generation_progress,
         generation_error
       }
     })
@@ -491,9 +494,17 @@ export const dbOperations = {
     if (syllabus?.status === 'completed') {
       return { status: 'completed' }
     } else if (syllabus?.status === 'failed' || job?.status === 'failed') {
+      let error = job?.error_message || 'Generation failed'
+      
+      // Check if it's a content violation and provide user-friendly message
+      if (job?.error_message?.includes('CONTENT_VIOLATION')) {
+        const match = job.error_message.match(/CONTENT_VIOLATION: (.+)/)
+        error = match ? match[1] : 'This topic doesn\'t meet our content guidelines.'
+      }
+      
       return { 
         status: 'failed', 
-        error: job?.error_message || 'Generation failed' 
+        error 
       }
     } else {
       return { 
@@ -581,6 +592,12 @@ export const dbOperations = {
         } else if (syllabus.status === 'failed') {
           generation_status = 'failed'
           generation_error = generationJob?.error_message || 'Generation failed'
+          
+          // Check if it's a content violation and provide user-friendly message
+          if (generationJob?.error_message?.includes('CONTENT_VIOLATION')) {
+            const match = generationJob.error_message.match(/CONTENT_VIOLATION: (.+)/)
+            generation_error = match ? match[1] : 'This topic doesn\'t meet our content guidelines.'
+          }
         } else {
           generation_status = 'generating'
           if (generationJob?.status === 'processing') {
@@ -593,6 +610,12 @@ export const dbOperations = {
         if (generationJob.status === 'failed') {
           generation_status = 'failed'
           generation_error = generationJob.error_message || 'Generation failed'
+          
+          // Check if it's a content violation and provide user-friendly message
+          if (generationJob.error_message?.includes('CONTENT_VIOLATION')) {
+            const match = generationJob.error_message.match(/CONTENT_VIOLATION: (.+)/)
+            generation_error = match ? match[1] : 'This topic doesn\'t meet our content guidelines.'
+          }
         } else {
           generation_status = 'generating'
           generation_progress = generationJob.status === 'processing' ? 50 : 10

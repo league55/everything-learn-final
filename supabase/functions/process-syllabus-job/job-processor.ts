@@ -1,15 +1,18 @@
 import { DatabaseService } from './database.ts'
 import { AIGenerator } from './ai-generator.ts'
+import { ModerationService } from './moderation.ts'
 import { validateSyllabus } from './validation.ts'
 import type { SyllabusGenerationJob } from './types.ts'
 
 export class JobProcessor {
   private db: DatabaseService
   private ai: AIGenerator
+  private moderation: ModerationService
 
   constructor() {
     this.db = new DatabaseService()
     this.ai = new AIGenerator()
+    this.moderation = new ModerationService()
   }
 
   async processJob(jobId?: string, courseConfigurationId?: string): Promise<void> {
@@ -39,6 +42,31 @@ export class JobProcessor {
       // Get course configuration
       const courseConfig = await this.db.getCourseConfiguration(job.course_configuration_id)
 
+      // CONTENT MODERATION: Validate course content before AI generation
+      console.log('Performing content moderation check...')
+      const moderationResult = await this.moderation.validateCourseContent(
+        courseConfig.topic, 
+        courseConfig.context
+      )
+
+      if (!moderationResult.safe) {
+        const errorMessage = moderationResult.reason || 'Content violates our guidelines'
+        console.log('Content moderation failed:', errorMessage)
+        
+        // Mark job as failed with specific error
+        await this.db.updateJobStatus(job.id, 'failed', {
+          errorMessage: `CONTENT_VIOLATION: ${errorMessage}`,
+          completedAt: new Date().toISOString()
+        })
+
+        // Update syllabus status to failed
+        await this.db.updateSyllabusStatus(job.course_configuration_id, 'failed')
+
+        throw new Error(`CONTENT_VIOLATION: ${errorMessage}`)
+      }
+
+      console.log('Content moderation passed, proceeding with generation...')
+
       // Generate syllabus using AI
       const generatedSyllabus = await this.ai.generateSyllabus(courseConfig)
 
@@ -62,6 +90,9 @@ export class JobProcessor {
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       
+      // Check if this is a content violation error
+      const isContentViolation = errorMessage.includes('CONTENT_VIOLATION')
+      
       // Update job as failed
       await this.db.updateJobStatus(job.id, 'failed', {
         errorMessage,
@@ -71,7 +102,12 @@ export class JobProcessor {
       // Update syllabus status to failed
       await this.db.updateSyllabusStatus(job.course_configuration_id, 'failed')
 
-      throw error
+      // Re-throw the error with appropriate context
+      if (isContentViolation) {
+        throw new Error(errorMessage) // Keep the content violation message as-is
+      } else {
+        throw error
+      }
     }
   }
 
