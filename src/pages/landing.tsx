@@ -47,7 +47,7 @@ export function LandingPage() {
         
         {/* Scroll Indicator */}
         <motion.div
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center"
+          className="absolute bottom-8 transform -translate-x-1/2 z-10 flex flex-col items-center"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2, duration: 0.8 }}
