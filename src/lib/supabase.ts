@@ -296,28 +296,54 @@ import { certificateOperations } from './supabase/db/certificates'
 
 // Database operations
 export const dbOperations = {
-  // Create a new course configuration
+  // Create a new course configuration - FIXED METHOD
   async createCourseConfiguration(data: {
     topic: string
     context: string
     depth: number
   }): Promise<CourseConfiguration> {
-    const { data: result, error } = await supabase
-      .from('course_configuration')
-      .insert({
-        topic: data.topic,
-        context: data.context,
-        depth: data.depth,
-        user_id: (await supabase.auth.getUser()).data.user?.id
-      })
-      .select()
-      .single()
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError) {
+        throw new Error(`Failed to get current user: ${userError.message}`)
+      }
+      
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
 
-    if (error) {
-      throw new Error(`Failed to create course configuration: ${error.message}`)
+      console.log('Creating course configuration for user:', user.id)
+
+      // Insert new course configuration
+      const { data: result, error } = await supabase
+        .from('course_configuration')
+        .insert({
+          topic: data.topic.trim(),
+          context: data.context.trim(),
+          depth: data.depth,
+          user_id: user.id
+        })
+        .select('*')
+        .single()
+
+      if (error) {
+        console.error('Database error creating course configuration:', error)
+        throw new Error(`Failed to create course configuration: ${error.message}`)
+      }
+
+      if (!result) {
+        throw new Error('Failed to create course configuration: No data returned')
+      }
+
+      console.log('Course configuration created successfully:', result.id)
+      return result
+
+    } catch (error) {
+      console.error('Error in createCourseConfiguration:', error)
+      throw error
     }
-
-    return result
   },
 
   // Get course configurations for the current user
@@ -584,7 +610,6 @@ export const dbOperations = {
       // Determine generation status
       let generation_status: 'generating' | 'completed' | 'failed' = 'generating'
       let generation_error: string | undefined
-      let generation_progress: number | undefined
 
       if (syllabus) {
         if (syllabus.status === 'completed') {
@@ -600,11 +625,6 @@ export const dbOperations = {
           }
         } else {
           generation_status = 'generating'
-          if (generationJob?.status === 'processing') {
-            generation_progress = 50
-          } else if (generationJob?.status === 'pending') {
-            generation_progress = 10
-          }
         }
       } else if (generationJob) {
         if (generationJob.status === 'failed') {
@@ -618,7 +638,6 @@ export const dbOperations = {
           }
         } else {
           generation_status = 'generating'
-          generation_progress = generationJob.status === 'processing' ? 50 : 10
         }
       }
 
@@ -638,7 +657,6 @@ export const dbOperations = {
           updated_at: enrollment.updated_at
         },
         generation_status,
-        generation_progress,
         generation_error
       }
     })
