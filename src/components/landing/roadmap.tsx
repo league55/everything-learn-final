@@ -45,8 +45,8 @@ const roadmapSteps: RoadmapStep[] = [
     description: "Engage with interactive content, exercises, and multimedia learning materials",
     icon: BookOpen,
     details: [
-      "Interactive learning modules",
-      "Rich multimedia content",
+      "Generate content ad-hoc",
+      "Source citations",
       "Progress tracking",
       "Adaptive learning pace"
     ],
@@ -54,14 +54,13 @@ const roadmapSteps: RoadmapStep[] = [
   },
   {
     id: 3,
-    title: "Generate Audio Podcast",
+    title: "Generate Audio Version",
     description: "Listen to your course content as an AI-generated podcast using ElevenLabs technology",
     icon: Headphones,
     details: [
-      "AI-generated audio content",
+      "Adapted audio content",
       "Natural voice synthesis",
-      "Listen while commuting",
-      "Multiple voice options"
+      "Listen while commuting", 
     ],
     color: "from-purple-500 to-indigo-500"
   },
@@ -71,10 +70,10 @@ const roadmapSteps: RoadmapStep[] = [
     description: "Complete your journey with a final conversation with an AI video tutor",
     icon: Video,
     details: [
-      "Powered by Tavus AI avatars",
-      "Knowledge assessment",
-      "Personalized feedback",
-      "Interactive video conversations"
+      "Powered by Tavus AI",
+      "Interactive video conversations",
+      "A friendly chat for easy courses",
+      "Knowledge assessment for difficult ones"
     ],
     color: "from-orange-500 to-red-500"
   },

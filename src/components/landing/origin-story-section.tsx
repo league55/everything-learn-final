@@ -16,12 +16,12 @@ const storyPanels = [
   {
     icon: FileQuestion,
     caption: "I was frustrated reading technical documentation...",
-    speech: "Why is this so dense? I just want the right depth for me!",
+    speech: "Why is this so dense? This is abosolutely not what I meed at the moment!",
   },
   {
     icon: Bot,
-    caption: "Pure AI wasn't enough...",
-    speech: "This is just a wall of text. Where's the structure? Where's the interactivity?",
+    caption: "Just AI wasn't enough...",
+    speech: "This is just a wall of text. No structure, no interactivity.",
   },
   {
     icon: Lightbulb,

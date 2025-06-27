@@ -57,12 +57,12 @@ export function LandingPage() {
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             onClick={() => {
-              const originSection = document.getElementById('origin-section')
+              const originSection = document.getElementById('roadmap-section')
               originSection?.scrollIntoView({ behavior: 'smooth' })
             }}
           >
             <span className="text-sm font-medium group-hover:text-foreground transition-colors">
-              Learn our story
+              Learn more
             </span>
             <motion.div
               className="w-6 h-10 border-2 border-muted-foreground/30 rounded-full flex justify-center group-hover:border-foreground/50 transition-colors"
@@ -83,7 +83,6 @@ export function LandingPage() {
       <div id="roadmap-section" ref={roadmapRef}>
         <Roadmap scrollRef={roadmapRef} />
       </div>
-
       
       {/* Origin Story Section */}
       <div id="origin-section">
