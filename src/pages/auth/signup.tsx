@@ -10,6 +10,7 @@ import { authOperations } from '@/lib/auth'
 import { useAuth } from '@/providers/auth-provider'
 import { PendingCourseManager } from '@/lib/pending-course'
 import { PendingCourseNotification } from '@/components/ui/pending-course-notification'
+import { BoltBadge } from '@/components/landing/bolt-badge'
 import { cn } from '@/lib/utils'
 
 interface SignUpFormData {
@@ -116,6 +117,9 @@ export function SignUpPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {/* Bolt Badge */}
+      <BoltBadge />
+
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-1/4 w-64 h-64 opacity-10">

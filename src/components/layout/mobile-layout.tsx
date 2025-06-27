@@ -1,9 +1,13 @@
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './sidebar'
+import { BoltBadge } from '@/components/landing/bolt-badge'
 
 export function MobileLayout() {
   return (
     <div className="flex h-screen bg-background">
+      {/* Bolt Badge */}
+      <BoltBadge />
+
       {/* Universal Sidebar */}
       <Sidebar />
 

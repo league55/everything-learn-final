@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Mail, ArrowLeft, CheckCircle } from 'lucide-react'
 import { authOperations } from '@/lib/auth'
+import { BoltBadge } from '@/components/landing/bolt-badge'
 import { cn } from '@/lib/utils'
 
 export function ForgotPasswordPage() {
@@ -41,6 +42,7 @@ export function ForgotPasswordPage() {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <BoltBadge />
         <Card className="w-full max-w-md shadow-2xl border-0 bg-card/80 backdrop-blur-lg">
           <CardHeader className="text-center">
             <div className="mx-auto h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mb-4">
@@ -79,6 +81,9 @@ export function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {/* Bolt Badge */}
+      <BoltBadge />
+
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-1/4 w-64 h-64 opacity-10">
